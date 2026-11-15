@@ -9,6 +9,7 @@ A package without a wheel for your platform is compiled from source on install (
 ## 🚀 2026 Enterprise Precision UI Preview
 
 > **Live Interactive Tracker:** **[https://kunalkshah1.github.io/tracker/](https://kunalkshah1.github.io/tracker/)**  
+> **Full Proposal & Specifications:** **[`docs/PROPOSAL.md`](docs/PROPOSAL.md)**  
 > **Challenge Discussion:** [wheelgap/wheelgap#154](https://github.com/wheelgap/wheelgap/discussions/154) · **Challenge Issue:** [wheelgap/wheelgap#155](https://github.com/wheelgap/wheelgap/issues/155)
 
 ### Desktop View (Light & Dark)
