@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wheelgap Tracker — 2026 Enterprise Prototype (Revamped Macro-First & One-Liner)</title>
+  <style>
+/* CSS Tokens & System Styles */
+:root {
+  --navy: #1f4e79;
+  --navy-dark: #143654;
+  --navy-light: #2b689e;
+  --amber: #f2a900;
+  --amber-dark: #b45309;
+  --amber-light: #fef3c7;
+
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --surface-alt: #f1f3f5;
+  --surface-hover: #e9ecef;
+  --text: #1a1f2c;
+  --text-muted: #596579;
+  --text-faint: #8a96a8;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+
+  --wheel: #15803d;
+  --wheel-bg: #dcfce7;
+  --bundled: #0e7490;
+  --bundled-bg: #cffafe;
+  --source: #b45309;
+  --source-bg: #fef3c7;
+  --missing: #dc2626;
+  --missing-bg: #fee2e2;
+  --unknown: #64748b;
+  --unknown-bg: #f1f5f9;
+
+  --bar-bg: #e2e8f0;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-alt: #1c2128;
+  --surface-hover: #262c36;
+  --text: #f0f6fc;
+  --text-muted: #8b949e;
+  --text-faint: #6e7681;
+  --line: #30363d;
+  --line-strong: #444c56;
+  --navy: #58a6ff;
+  --navy-dark: #388bfd;
+  --amber: #f59e0b;
+  --amber-dark: #d97706;
+
+  --wheel: #22c55e;
+  --wheel-bg: rgba(34, 197, 94, 0.15);
+  --bundled: #22d3ee;
+  --bundled-bg: rgba(34, 211, 238, 0.15);
+  --source: #f59e0b;
+  --source-bg: rgba(245, 158, 11, 0.15);
+  --missing: #f87171;
+  --missing-bg: rgba(248, 113, 113, 0.15);
+  --unknown: #94a3b8;
+  --unknown-bg: rgba(148, 163, 184, 0.15);
+
+  --bar-bg: #21262d;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.7);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); min-height: 100vh; display: flex; flex-direction: column; transition: background-color 0.2s, color 0.2s; }
+a { color: var(--navy); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, kbd { font-family: var(--mono); }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; width: 100%; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 0 12px; }
+}
+
+/* Topbar */
+.topbar { position: sticky; top: 0; z-index: 40; background: var(--surface); border-bottom: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+.topbar-inner { max-width: 1240px; margin: 0 auto; padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+@media (max-width: 640px) { .topbar-inner { padding: 0 12px; height: 50px; } }
+.logo-link { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-weight: 700; font-size: 1.05rem; }
+.logo-link strong { color: var(--navy); }
+.cmd-trigger { flex: 1; max-width: 400px; display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; background: var(--surface-alt); border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.84rem; cursor: pointer; }
+@media (max-width: 640px) { .cmd-trigger { display: none; } }
+.cmd-trigger-text { flex: 1; text-align: left; }
+.shortcut-kbd { font: 600 0.72rem var(--mono); padding: 2px 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; color: var(--text-muted); }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.action-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; background: var(--surface-alt); border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--text); font-size: 0.82rem; font-weight: 500; cursor: pointer; }
+
+/* Hero */
+.hero { padding: 24px 0 18px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+@media (max-width: 640px) { .hero { padding: 16px 0 14px; margin-bottom: 16px; } }
+.eyebrow { font: 600 0.76rem/1 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.hero-title { font-size: clamp(1.6rem, 3.2vw, 2.3rem); font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; margin-bottom: 8px; }
+.lede { max-width: 72ch; font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 18px; }
+@media (max-width: 640px) { .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; } }
+.kpi-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
+.kpi-card.highlight { border-left: 3px solid var(--amber); }
+.kpi-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.kpi-val { font: 700 1.45rem var(--mono); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin: 2px 0 1px; color: var(--text); }
+.kpi-sub { font-size: 0.74rem; color: var(--text-faint); }
+
+/* Panels */
+.panel-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+@media (max-width: 640px) { .panel-card { padding: 14px 12px; border-radius: var(--radius); margin-bottom: 16px; } }
+.section-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.title-with-desc h2 { font-size: 1.18rem; font-weight: 700; letter-spacing: -0.015em; }
+.section-sub { font-size: 0.84rem; color: var(--text-muted); margin-top: 2px; }
+
+/* 1. Ecosystem Platform Health & Leaderboard */
+.matrix-controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.view-toggles { display: inline-flex; padding: 2px; background: var(--surface-alt); border: 1px solid var(--line); border-radius: var(--radius-full); }
+.toggle-btn { border: none; background: none; font-size: 0.78rem; font-weight: 600; padding: 4px 12px; border-radius: var(--radius-full); color: var(--text-muted); cursor: pointer; }
+.toggle-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.tabs { display: inline-flex; flex-wrap: wrap; gap: 3px; border: 1px solid var(--line); border-radius: var(--radius-full); padding: 2px; background: var(--surface-alt); }
+.tabs button { border: none; background: none; color: var(--text-muted); font: 600 0.8rem var(--mono); padding: 4px 12px; border-radius: var(--radius-full); cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--navy); color: #ffffff; box-shadow: var(--shadow-sm); }
+
+.platform-leaderboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 14px 0; }
+@media (max-width: 640px) { .platform-leaderboard { grid-template-columns: 1fr; gap: 8px; } }
+
+.leaderboard-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow-sm); cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: all 0.12s; outline: none; position: relative; width: 100%; }
+.leaderboard-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.leaderboard-card.active-platform-card { border: 2px solid var(--amber); background: var(--surface-alt); }
+.card-top-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.board-rank-pill { font: 700 0.7rem var(--mono); padding: 2px 7px; border-radius: var(--radius-full); }
+.sev-critical .board-rank-pill { background: var(--missing-bg); color: var(--missing); }
+.sev-warning .board-rank-pill { background: var(--source-bg); color: var(--source); }
+.sev-good .board-rank-pill { background: var(--wheel-bg); color: var(--wheel); }
+.active-indicator-pill { font: 600 0.68rem var(--mono); background: var(--amber); color: #fff; padding: 1px 6px; border-radius: var(--radius-full); }
+.board-pname { font-size: 0.98rem; font-weight: 700; color: var(--text); }
+.board-pdesc { font: 400 0.72rem var(--mono); color: var(--text-muted); }
+.board-stat-row { display: flex; align-items: baseline; justify-content: space-between; }
+.board-pct-block { display: flex; align-items: baseline; gap: 6px; }
+.board-pct { font: 800 1.45rem var(--mono); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--text); }
+.board-pct-sub { font-size: 0.74rem; color: var(--text-muted); }
+.board-gaps { font: 700 1.05rem var(--mono); color: var(--missing); font-variant-numeric: tabular-nums; }
+.board-gaps-sub { display: block; font-size: 0.7rem; color: var(--text-faint); text-align: right; }
+.bar { display: flex; height: 10px; border-radius: var(--radius-full); overflow: hidden; background: var(--bar-bg); }
+.bar span { display: block; height: 100%; }
+.b-wheel { background: var(--wheel); }
+.b-bundled { background: var(--bundled); }
+.b-source { background: var(--source); }
+.b-missing { background: var(--missing); }
+.board-footer-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 4px; border-top: 1px solid var(--line); }
+.board-spark-wrap { width: 110px; height: 24px; }
+.spark { width: 100%; height: 100%; }
+.spark path { fill: none; stroke: var(--wheel); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.spark circle { fill: var(--wheel); }
+.board-delta { font: 600 0.72rem var(--mono); }
+.delta-up { color: var(--wheel); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; }
+.legend-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; color: var(--text-muted); }
+.sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; }
+.sw-wheel { background: var(--wheel); }
+.sw-bundled { background: var(--bundled); }
+.sw-source { background: var(--source); }
+.sw-missing { background: var(--missing); }
+
+/* 2. Streamlined Instant Checker (Collapsible One-Liner Info) */
+.omni-panel { border-left: 4px solid var(--amber); transition: padding 0.18s ease; }
+.omni-panel.is-minimized { padding: 9px 16px; }
+.omni-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; transition: margin 0.18s ease; }
+.omni-panel.is-minimized .omni-header { margin-bottom: 0; }
+.omni-title-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.omni-badge { font: 700 0.7rem var(--mono); text-transform: uppercase; letter-spacing: 0.05em; background: var(--amber-light); color: var(--amber-dark); padding: 2px 7px; border-radius: var(--radius-sm); }
+[data-theme="dark"] .omni-badge { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.omni-title { font-size: 1.1rem; font-weight: 700; }
+
+/* Minimized One-Liner Summary Bar inside Header */
+.omni-minimized-summary { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; overflow: hidden; }
+.omni-minimized-summary[hidden] { display: none !important; }
+.mini-summary-pill { font: 700 0.72rem var(--mono); padding: 2px 7px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
+.mini-summary-text { font-size: 0.84rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.mini-summary-actions { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
+.mini-btn { padding: 2px 8px !important; font-size: 0.74rem !important; height: 24px !important; line-height: 1 !important; }
+@media (max-width: 768px) {
+  .omni-header { flex-wrap: wrap; }
+  .omni-minimized-summary { order: 3; width: 100%; margin-top: 6px; flex-wrap: wrap; }
+}
+
+.omni-toggle-btn { all: unset; box-sizing: border-box; font: 600 0.74rem var(--mono); padding: 3px 9px; background: var(--surface-alt); border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.omni-toggle-btn:hover { background: var(--surface-hover); color: var(--text); }
+
+.omni-form { display: grid; grid-template-columns: 2fr 1fr 1.3fr auto; gap: 10px; align-items: flex-end; }
+@media (max-width: 860px) { .omni-form { grid-template-columns: 1fr 1fr; } .omni-pkg-field, .omni-action-field { grid-column: span 2; } }
+@media (max-width: 520px) { .omni-form { grid-template-columns: 1fr; } .omni-pkg-field, .omni-action-field { grid-column: span 1; } }
+.omni-field { display: flex; flex-direction: column; gap: 4px; }
+.omni-label { font-size: 0.74rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+
+/* Autocomplete wrapper with dedicated Clear button */
+.autocomplete-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
+.autocomplete-wrapper input { width: 100%; height: 38px; padding: 0 32px 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: 500 0.88rem var(--mono); }
+.autocomplete-wrapper input:focus { outline: 2px solid var(--amber); }
+.search-clear-btn { all: unset; box-sizing: border-box; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 99px; background: var(--surface-hover); color: var(--text-muted); font-size: 0.76rem; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.search-clear-btn:hover { background: var(--line-strong); color: var(--text); }
+.search-clear-btn[hidden] { display: none; }
+
+.omni-select { height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: 500 0.85rem var(--mono); font-size: 16px; cursor: pointer; width: 100%; }
+@media (min-width: 641px) { .omni-select { font-size: 0.84rem; } }
+.btn-primary { height: 38px; padding: 0 16px; font-size: 0.86rem; background: var(--navy); color: #fff; border: none; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; }
+
+.omni-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 7px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.preset-label { font-size: 0.74rem; color: var(--text-faint); font-weight: 600; font-family: var(--mono); }
+.preset-chip { all: unset; box-sizing: border-box; font: 500 0.72rem var(--mono); background: var(--surface-alt); border: 1px solid var(--line); padding: 3px 8px; border-radius: var(--radius-full); color: var(--text-muted); cursor: pointer; }
+.preset-chip:hover { background: var(--surface-hover); color: var(--text); }
+
+/* High-Density One-Liner Verdict Bar */
+.omni-answer-card { margin-top: 10px; }
+.verdict-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 14px; border-radius: var(--radius); border: 1.5px solid transparent; box-shadow: var(--shadow-sm); }
+.verdict-wheel { background: var(--wheel-bg); border-color: var(--wheel); }
+.verdict-bundled { background: var(--bundled-bg); border-color: var(--bundled); }
+.verdict-source { background: var(--source-bg); border-color: var(--source); }
+.verdict-missing { background: var(--missing-bg); border-color: var(--missing); }
+
+.verdict-status-pill { font: 700 0.74rem var(--mono); padding: 2px 8px; border-radius: var(--radius-full); color: #fff; white-space: nowrap; }
+.badge-wheel { background: var(--wheel); }
+.badge-bundled { background: var(--bundled); }
+.badge-source { background: var(--source); }
+.badge-missing { background: var(--missing); }
+
+.verdict-text-block { flex: 1; min-width: 220px; font-size: 0.86rem; line-height: 1.35; color: var(--text); }
+.verdict-pkg-title { font-family: var(--mono); font-weight: 700; margin-right: 4px; }
+.verdict-meta-inline { display: inline-block; margin-left: 6px; font: 600 0.72rem var(--mono); color: var(--text-muted); opacity: 0.85; }
+
+.verdict-bar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.vbtn { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 3px; padding: 4px 9px; border-radius: var(--radius-sm); font: 600 0.74rem var(--sans); cursor: pointer; background: var(--surface); border: 1px solid var(--line); color: var(--text); white-space: nowrap; }
+.vbtn:hover { background: var(--surface-hover); text-decoration: none; }
+.vbtn-filter { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+/* Autocomplete Dropdown */
+.autocomplete-menu { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-lg); max-height: 220px; overflow-y: auto; z-index: 60; padding: 4px; }
+.autocomplete-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; min-height: 36px; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.84rem; }
+.autocomplete-item:hover { background: var(--surface-alt); }
+.autocomplete-name { font-weight: 600; font-family: var(--mono); }
+
+/* 3. Package Explorer Split Layout */
+.content-split-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+@media (max-width: 960px) { .content-split-grid { grid-template-columns: 1fr; } }
+.highlight-target { color: var(--navy); font-weight: 700; }
+.filter-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.status-filter-pills { display: inline-flex; gap: 3px; background: var(--surface-alt); padding: 2px; border-radius: var(--radius-full); border: 1px solid var(--line); }
+.pill-filter { border: none; background: none; font: 600 0.72rem var(--mono); padding: 3px 9px; border-radius: var(--radius-full); color: var(--text-muted); cursor: pointer; }
+.pill-filter.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.pill-filter.pill-source.active { background: var(--source); color: #fff; }
+.pill-filter.pill-missing.active { background: var(--missing); color: #fff; }
+.table-search-box input { padding: 5px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-alt); font: 0.8rem var(--mono); color: var(--text); min-width: 160px; }
+
+/* Pagination */
+.pagination-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 2px; }
+.top-pagination { border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+.bottom-pagination { border-top: 1px solid var(--line); margin-top: 8px; }
+.pagination-info { font-size: 0.8rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.pagination-controls { display: inline-flex; align-items: center; gap: 3px; }
+.page-btn { border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 0.76rem var(--mono); padding: 4px 8px; border-radius: var(--radius-sm); cursor: pointer; min-width: 28px; text-align: center; }
+.page-btn:hover:not(:disabled) { background: var(--surface-hover); }
+.page-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+.page-size-selector { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; color: var(--text-muted); }
+.page-size-select { padding: 3px 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-alt); font: 600 0.78rem var(--mono); cursor: pointer; }
+
+/* Table */
+.table-wrapper { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.packages-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.packages-table th, .packages-table td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+.packages-table thead th { background: var(--surface-alt); font: 600 0.74rem var(--mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; user-select: none; }
+.packages-table tbody tr:hover { background: var(--surface-alt); }
+.pkg-name-link { font: 600 0.88rem var(--mono); color: var(--text); }
+.pkg-name-link:hover { color: var(--navy); }
+.pkg-version { font: 400 0.74rem var(--mono); color: var(--text-faint); margin-left: 3px; }
+.pkg-rank, .pkg-downloads { font: 0.8rem var(--mono); color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.table-ext-link { font: 500 0.74rem var(--sans); color: var(--text-muted); padding: 2px 7px; border: 1px solid var(--line); border-radius: var(--radius-sm); display: inline-block; white-space: nowrap; margin-left: 3px; }
+.table-ext-link:hover { background: var(--surface-hover); color: var(--text); text-decoration: none; }
+.status { display: inline-flex; align-items: center; gap: 4px; font: 600 0.74rem var(--mono); padding: 2px 8px; border-radius: var(--radius-full); white-space: nowrap; }
+.s-wheel { color: var(--wheel); background: var(--wheel-bg); }
+.s-source { color: var(--source); background: var(--source-bg); }
+.s-missing { color: var(--missing); background: var(--missing-bg); }
+
+/* Pulse Feed */
+.sub-heading { font-size: 1rem; font-weight: 700; }
+.time-badge { font: 600 0.7rem var(--mono); padding: 2px 6px; background: var(--surface-alt); color: var(--text-muted); border-radius: var(--radius-full); margin-left: 6px; }
+.pulse-note { font-size: 0.82rem; color: var(--text-muted); margin: 4px 0 10px; }
+.pulse-feed { list-style: none; padding: 0; margin: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); max-height: 360px; overflow-y: auto; }
+.pulse-feed li { padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 0.82rem; display: flex; align-items: flex-start; gap: 8px; }
+.pulse-icon { flex-shrink: 0; width: 16px; height: 16px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; margin-top: 2px; }
+.icon-gain { background: var(--wheel-bg); color: var(--wheel); }
+.icon-loss { background: var(--missing-bg); color: var(--missing); }
+.pulse-pkg { font-weight: 600; font-family: var(--mono); }
+.pulse-meta { font-size: 0.72rem; color: var(--text-faint); display: block; margin-top: 1px; }
+
+/* CTA Banner & Footer */
+.cta-banner { margin-top: 28px; padding: 22px; background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%); border: 2px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.cta-header h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+.command-block { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 48px 10px 14px; margin: 10px 0; font-size: 0.88rem; overflow-x: auto; }
+.btn-copy { position: absolute; top: 6px; right: 6px; padding: 4px 8px; font: 600 0.76rem var(--sans); background: var(--surface-alt); border: 1px solid var(--line); border-radius: 4px; color: var(--text); cursor: pointer; }
+.site-footer { margin-top: auto; border-top: 1px solid var(--line); padding: 28px 0 32px; color: var(--text-muted); font-size: 0.82rem; }
+.footer-grid { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
+.footer-nav { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+
+/* Drawer & Modals */
+.drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(2px); z-index: 100; display: flex; justify-content: flex-end; }
+.drawer { width: 100%; max-width: 560px; height: 100%; background: var(--surface); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; z-index: 101; }
+.drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.drawer-heading { font: 700 1.2rem var(--mono); }
+.drawer-subtitle { font-size: 0.8rem; color: var(--text-muted); }
+.drawer-close { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-alt); cursor: pointer; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 20px; }
+.matrix-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); margin: 10px 0; }
+.matrix { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.matrix th, .matrix td { padding: 6px 8px; text-align: left; border-top: 1px solid var(--line); }
+.matrix thead th { border-top: 0; background: var(--surface-alt); color: var(--text-muted); font: 600 0.74rem var(--mono); }
+  </style>
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <a href="#" class="logo-link">
+          <svg class="brand-icon" viewBox="0 0 64 64" width="28" height="28" aria-hidden="true">
+            <path d="M56.72,18.85 A28,28 0 1 1 45.15,7.28 L39.98,16.99 A17,17 0 1 0 47.01,24.02 Z" fill="#8fb8de"/>
+            <path d="M50.86,6.99 A28,28 0 0 1 58.41,14.54 L49.29,20.69 A17,17 0 0 0 44.71,16.11 Z" fill="#f2a900"/>
+            <circle cx="32" cy="32" r="6" fill="#8fb8de"/>
+          </svg>
+          <span>wheelgap <strong>tracker</strong></span>
+        </a>
+      </div>
+
+      <button class="cmd-trigger" id="cmd-trigger" type="button" aria-label="Search packages">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="cmd-trigger-text">Search 5,000 packages…</span>
+        <kbd class="shortcut-kbd">⌘K</kbd>
+      </button>
+
+      <div class="topbar-actions">
+        <button class="action-btn" id="theme-toggle" type="button">🌓 Theme</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap main-wrap">
+    <!-- Header Hero & Dynamic KPIs -->
+    <header class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">wheelgap tracker · 2026 enterprise design</p>
+        <h1 class="hero-title">Python wheel coverage</h1>
+        <p class="lede">Which of the <strong id="n-packages">5,000</strong> most-downloaded PyPI packages ship a prebuilt wheel for each platform. Packages without prebuilt wheels must be compiled from source on install, which is slow and needs build dependencies.</p>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card highlight">
+          <span class="kpi-label">Packages Tracked</span>
+          <span class="kpi-val">5,000</span>
+          <span class="kpi-sub">top PyPI downloads</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Targets Scanned</span>
+          <span class="kpi-val">42</span>
+          <span class="kpi-sub">9 platforms × 5 Pythons</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Pure Python</span>
+          <span class="kpi-val">4,047</span>
+          <span class="kpi-sub">80.9% · installs everywhere</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Compiled Code</span>
+          <span class="kpi-val">953</span>
+          <span class="kpi-sub">where gaps occur</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- ====================================================================
+           1. ECOSYSTEM HEALTH HUB & WORST-SERVED LEADERBOARD (Macro View at First Glance)
+           ==================================================================== -->
+      <section class="panel-card health-hub-panel" id="health-hub">
+        <div class="section-head flex-wrap">
+          <div class="title-with-desc">
+            <h2>Ecosystem Platform Health & Gap Ranking</h2>
+            <p class="section-sub" id="pure-note">Ranked from Worst-Served (lowest wheel coverage / highest gap count) to Best-Served at first glance.</p>
+          </div>
+
+          <div class="matrix-controls-row">
+            <div class="view-toggles" role="group">
+              <button type="button" class="toggle-btn active" id="btn-show-all">All 5,000 Packages</button>
+              <button type="button" class="toggle-btn" id="btn-show-compiled">953 Compiled Only (True Gaps)</button>
+            </div>
+
+            <div class="tabs" id="python-tabs">
+              <button role="tab" aria-selected="true" data-python="3.13">3.13</button>
+              <button role="tab" aria-selected="false" data-python="3.14">3.14</button>
+              <button role="tab" aria-selected="false" data-python="3.14t">3.14t</button>
+              <button role="tab" aria-selected="false" data-python="3.15">3.15</button>
+              <button role="tab" aria-selected="false" data-python="3.15t">3.15t</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ranked Platform Cards Deck (Ranked Worst to Best Served) -->
+        <div class="platform-leaderboard" id="platform-leaderboard" aria-live="polite"></div>
+
+        <div class="legend">
+          <span class="legend-tag tag-wheel"><i class="sw sw-wheel"></i> wheel (prebuilt)</span>
+          <span class="legend-tag tag-bundled"><i class="sw sw-bundled"></i> bundled (Pyodide build)</span>
+          <span class="legend-tag tag-source"><i class="sw sw-source"></i> builds from source</span>
+          <span class="legend-tag tag-missing"><i class="sw sw-missing"></i> cannot install</span>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           2. STREAMLINED INSTANT ANSWER OMNI-CHECKER (Collapsible One-Liner Info)
+           ==================================================================== -->
+      <section class="panel-card omni-panel" id="omni-checker">
+        <div class="omni-header">
+          <div class="omni-title-wrap">
+            <span class="omni-badge">⚡ Instant Checker</span>
+            <h2 class="omni-title">Package Compatibility</h2>
+          </div>
+
+          <!-- One-Liner Strip: Visible when minimized, showing selected package verdict & quick actions -->
+          <div class="omni-minimized-summary" id="omni-minimized-summary" hidden>
+            <!-- Populated dynamically with one-liner verdict & quick actions -->
+          </div>
+
+          <button type="button" class="omni-toggle-btn" id="omni-toggle-btn" aria-expanded="true">
+            <span id="omni-toggle-icon">▲</span> <span id="omni-toggle-text">Minimize</span>
+          </button>
+        </div>
+
+        <div class="omni-collapsible-body" id="omni-body">
+          <form class="omni-form" id="search-form" onsubmit="return false">
+            <div class="omni-field omni-pkg-field">
+              <label for="search" class="omni-label">Package Name</label>
+              <div class="autocomplete-wrapper">
+                <input id="search" placeholder="Type package (e.g. numpy, grpcio, psycopg2)…" autocomplete="off" spellcheck="false" value="numpy">
+                <button type="button" class="search-clear-btn" id="search-clear-btn" aria-label="Clear package input" title="Clear input">✕</button>
+                <div class="autocomplete-menu" id="search-autocomplete" hidden></div>
+              </div>
+            </div>
+
+            <div class="omni-field">
+              <label for="omni-python-select" class="omni-label">Python</label>
+              <select id="omni-python-select" class="omni-select">
+                <option value="3.13" selected>Python 3.13</option>
+                <option value="3.14">Python 3.14</option>
+                <option value="3.14t">Python 3.14t</option>
+                <option value="3.15">Python 3.15</option>
+                <option value="3.15t">Python 3.15t</option>
+              </select>
+            </div>
+
+            <div class="omni-field">
+              <label for="omni-platform-select" class="omni-label">Target Platform</label>
+              <select id="omni-platform-select" class="omni-select">
+                <option value="musl-aarch64" selected>Alpine ARM64 (musl)</option>
+                <option value="musl-x86_64">Alpine x86_64 (musl)</option>
+                <option value="win-arm64">Windows ARM64 (win_arm64)</option>
+                <option value="win-amd64">Windows x86_64 (win_amd64)</option>
+                <option value="linux-aarch64">Linux ARM64 (glibc)</option>
+                <option value="linux-x86_64">Linux x86_64 (glibc)</option>
+                <option value="macos-arm64">macOS Apple silicon</option>
+                <option value="macos-x86_64">macOS Intel</option>
+                <option value="pyodide">Pyodide (wasm32)</option>
+              </select>
+            </div>
+
+            <div class="omni-field omni-action-field">
+              <button type="submit" class="btn-primary" id="omni-submit-btn">Check</button>
+            </div>
+          </form>
+
+          <!-- Fast Presets for Core Questions -->
+          <div class="omni-presets" id="omni-presets">
+            <span class="preset-label">Quick checks:</span>
+            <button type="button" class="preset-chip" data-pkg="numpy" data-py="3.13" data-pl="musl-aarch64">numpy · Alpine ARM (3.13)</button>
+            <button type="button" class="preset-chip" data-pkg="grpcio" data-py="3.13" data-pl="musl-aarch64">grpcio · Alpine ARM</button>
+            <button type="button" class="preset-chip" data-pkg="psycopg2" data-py="3.13" data-pl="musl-aarch64">psycopg2 · Alpine ARM</button>
+            <button type="button" class="preset-chip" data-pkg="torch" data-py="3.13" data-pl="musl-aarch64">torch · Alpine ARM</button>
+            <button type="button" class="preset-chip" data-pkg="grpcio" data-py="3.14t" data-pl="musl-aarch64">grpcio · 3.14t</button>
+          </div>
+
+          <!-- The Instant Visual Answer Card (One-Liner / Compact View) -->
+          <div class="omni-answer-card" id="omni-answer" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           3. EXPLORER & ECOSYSTEM PULSE: Two-Column Split Layout
+           ==================================================================== -->
+      <div class="content-split-grid">
+        <section class="panel-card explorer-panel">
+          <div class="section-head flex-wrap">
+            <div class="title-with-desc">
+              <h2 id="gaps-title">Packages without a wheel on <span id="gaps-platform" class="highlight-target">Alpine ARM64, Python 3.13</span></h2>
+              <p class="section-sub">Sortable and filterable. Click any row to inspect full cross-platform compatibility.</p>
+            </div>
+
+            <div class="filter-toolbar">
+              <div class="status-filter-pills" role="radiogroup">
+                <button type="button" class="pill-filter active" data-filter="all">All Gaps</button>
+                <button type="button" class="pill-filter pill-source" data-filter="source">from source</button>
+                <button type="button" class="pill-filter pill-missing" data-filter="missing">cannot install</button>
+              </div>
+              <div class="table-search-box">
+                <input type="search" id="gaps-search" placeholder="Filter gap packages…">
+              </div>
+            </div>
+          </div>
+
+          <div class="pagination-bar top-pagination">
+            <span class="pagination-info" id="pagination-info-top">Showing 1–25 of packages</span>
+            <div class="pagination-controls" id="pagination-buttons-top"></div>
+            <div class="page-size-selector">
+              <label for="page-size-top">Rows:</label>
+              <select id="page-size-top" class="page-size-select">
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="packages-table">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Package</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" style="text-align:right">Downloads (30d)</th>
+                  <th scope="col" style="text-align:right">Quick Links</th>
+                </tr>
+              </thead>
+              <tbody id="gaps"></tbody>
+            </table>
+          </div>
+
+          <div class="pagination-bar bottom-pagination">
+            <span class="pagination-info" id="pagination-info-bottom"></span>
+            <div class="pagination-controls" id="pagination-buttons-bottom"></div>
+          </div>
+        </section>
+
+        <!-- Sidebar: Ecosystem Pulse -->
+        <aside class="sidebar-col">
+          <section class="panel-card pulse-card">
+            <div class="section-head">
+              <div class="title-with-desc">
+                <h3 class="sub-heading">Ecosystem Pulse <span class="time-badge">Recent Changes</span></h3>
+              </div>
+            </div>
+            <p class="pulse-note">Packages that recently gained or lost wheels in nightly scans from <code>changes.json</code>.</p>
+            <ol class="pulse-feed" id="pulse-feed"></ol>
+          </section>
+        </aside>
+      </div>
+
+      <!-- CTA -->
+      <section class="cta-banner">
+        <div class="cta-header">
+          <h2>Check your own project</h2>
+          <p>Run wheelgap locally on your project lockfile to catch missing binary wheels before CI build breaks:</p>
+        </div>
+        <div class="command-block">
+          <code>uvx wheelgap -p 3.13 -t linux-aarch64,musl-aarch64 --explain</code>
+          <button class="btn-copy" id="cta-copy-btn" type="button">Copy</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <div class="footer-grid">
+        <p>Each night, wheelgap checks the latest release of top packages against every platform target. CC0 public domain data.</p>
+        <div class="footer-nav">
+          <a href="#">Raw data (CC0)</a>
+          <a href="#">CSV</a>
+          <a href="#">Campaigns</a>
+          <a href="https://github.com/wheelgap/wheelgap">Source code</a>
+          <a href="https://github.com/wheelgap/wheelgap/discussions/154">Redesign Hub</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Deep Inspection Slide-over Drawer -->
+  <div class="drawer-backdrop" id="drawer-backdrop" style="display:none">
+    <aside class="drawer" id="drawer">
+      <div class="drawer-header">
+        <div class="drawer-titles">
+          <h3 id="drawer-title" class="drawer-heading">Package Details</h3>
+          <span class="drawer-subtitle" id="drawer-subtitle">All 42 target platforms compatibility overview</span>
+        </div>
+        <button class="drawer-close" id="drawer-close" type="button">✕</button>
+      </div>
+      <div class="drawer-body" id="drawer-content"></div>
+    </aside>
+  </div>
+
+  <script>
+  const PLATFORMS = {
+    "win-arm64": ["Windows ARM64", "win_arm64", 71.2, 1440, { wheel: 71.2, bundled: 0, source: 25.1, missing: 3.7 }],
+    "musl-aarch64": ["Alpine ARM64", "musl · musllinux", 84.1, 795, { wheel: 84.1, bundled: 0, source: 14.8, missing: 1.1 }],
+    "musl-x86_64": ["Alpine x86_64", "musl · musllinux", 86.5, 675, { wheel: 86.5, bundled: 0, source: 12.6, missing: 0.9 }],
+    "pyodide": ["Pyodide (browser)", "wasm32 · browser", 89.2, 540, { wheel: 12.1, bundled: 77.1, source: 0, missing: 10.8 }],
+    "linux-aarch64": ["Linux ARM64", "glibc · manylinux", 94.8, 260, { wheel: 94.8, bundled: 0, source: 4.8, missing: 0.4 }],
+    "win-amd64": ["Windows x86_64", "win_amd64", 95.6, 220, { wheel: 95.6, bundled: 0, source: 4.1, missing: 0.3 }],
+    "macos-arm64": ["macOS Apple silicon", "macosx arm64", 96.4, 180, { wheel: 96.4, bundled: 0, source: 3.4, missing: 0.2 }],
+    "macos-x86_64": ["macOS Intel", "macosx x86_64", 97.2, 140, { wheel: 97.2, bundled: 0, source: 2.6, missing: 0.2 }],
+    "linux-x86_64": ["Linux x86_64", "glibc · manylinux", 98.9, 55, { wheel: 98.9, bundled: 0, source: 1.0, missing: 0.1 }]
+  };
+
+  const PACKAGES = [
+    { name: "numpy", rank: 21, version: "2.5.4", pure: false, downloads: 1025805630, status: "wheel" },
+    { name: "grpcio", rank: 92, version: "1.85.1", pure: false, downloads: 370169739, status: "wheel" },
+    { name: "cryptography", rank: 9, version: "50.0.2", pure: false, downloads: 1317045984, status: "wheel" },
+    { name: "psycopg2", rank: 390, version: "2.9.13", pure: false, downloads: 64846937, status: "source" },
+    { name: "torch", rank: 397, version: "2.15.0", pure: false, downloads: 63457465, status: "missing" },
+    { name: "onnxruntime", rank: 285, version: "1.32.0", pure: false, downloads: 92345110, status: "missing" },
+    { name: "triton", rank: 473, version: "3.9.0", pure: false, downloads: 51204900, status: "missing" },
+    { name: "cffi", rank: 14, version: "1.17.1", pure: false, downloads: 1204500120, status: "source" },
+    { name: "pydantic-core", rank: 28, version: "2.27.2", pure: false, downloads: 850230100, status: "wheel" },
+    { name: "pyyaml", rank: 35, version: "6.0.2", pure: false, downloads: 740112340, status: "source" },
+    { name: "markupsafe", rank: 42, version: "3.0.2", pure: false, downloads: 680220190, status: "source" },
+    { name: "greenlet", rank: 64, version: "3.1.1", pure: false, downloads: 490220110, status: "source" },
+    { name: "multidict", rank: 78, version: "6.1.0", pure: false, downloads: 420550120, status: "source" },
+    { name: "frozenlist", rank: 85, version: "1.5.0", pure: false, downloads: 395110200, status: "source" },
+    { name: "msgpack", rank: 104, version: "1.1.0", pure: false, downloads: 330110900, status: "source" },
+    { name: "aiohttp", rank: 55, version: "3.11.10", pure: false, downloads: 580110200, status: "source" },
+    { name: "yarl", rank: 71, version: "1.18.3", pure: false, downloads: 460110200, status: "source" },
+    { name: "lxml", rank: 112, version: "5.3.0", pure: false, downloads: 310220100, status: "source" },
+    { name: "pillow", rank: 68, version: "11.0.0", pure: false, downloads: 480110200, status: "wheel" },
+    { name: "scipy", rank: 82, version: "1.14.1", pure: false, downloads: 410220100, status: "wheel" },
+    { name: "pandas", rank: 38, version: "2.2.3", pure: false, downloads: 710220100, status: "wheel" },
+    { name: "pyarrow", rank: 118, version: "18.1.0", pure: false, downloads: 290110200, status: "wheel" },
+    { name: "regex", rank: 125, version: "2024.11.13", pure: false, downloads: 275110200, status: "source" },
+    { name: "wrapt", rank: 130, version: "1.17.0", pure: false, downloads: 260110200, status: "source" },
+    { name: "bcrypt", rank: 142, version: "4.2.1", pure: false, downloads: 240110200, status: "wheel" }
+  ];
+
+  const state = {
+    pkg: "numpy",
+    python: "3.13",
+    platform: "musl-aarch64",
+    filter: "all",
+    search: "",
+    pageSize: 25,
+    page: 1,
+    compiledOnly: false
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  function updateClearBtn() {
+    const btn = $("search-clear-btn");
+    if (btn) btn.hidden = !$("search").value.trim();
+  }
+
+  function renderOmni() {
+    updateClearBtn();
+    const pkgName = $("search").value.trim() || state.pkg;
+    const py = $("omni-python-select").value;
+    const pl = $("omni-platform-select").value;
+    const [pname] = PLATFORMS[pl] || [pl, ""];
+
+    let p = PACKAGES.find(x => x.name.toLowerCase() === pkgName.toLowerCase());
+    if (!p) {
+      p = { name: pkgName, rank: 999, version: "latest", pure: false, downloads: 15000000, status: "source" };
+    }
+
+    let status = p.status;
+    if (pkgName.toLowerCase() === "numpy") {
+      status = pl === "pyodide" ? "bundled" : "wheel";
+    } else if (pkgName.toLowerCase() === "grpcio") {
+      status = py === "3.14t" || py === "3.15t" ? "source" : "wheel";
+    } else if (pkgName.toLowerCase() === "psycopg2") {
+      status = "source";
+    } else if (pkgName.toLowerCase() === "torch") {
+      status = (pl === "musl-aarch64" || pl === "pyodide") ? "missing" : "wheel";
+    }
+
+    let badgeClass = "badge-wheel", cardClass = "verdict-wheel", badgeText = "✓ Prebuilt Wheel", summary = "";
+
+    if (status === "wheel") {
+      cardClass = "verdict-wheel";
+      badgeClass = "badge-wheel";
+      badgeText = "✓ Prebuilt Wheel";
+      summary = `has prebuilt wheel for <strong>${pname}</strong> on <strong>Python ${py}</strong> · Installs in ~2s (no compiler needed)`;
+    } else if (status === "bundled") {
+      cardClass = "verdict-bundled";
+      badgeClass = "badge-bundled";
+      badgeText = "📦 Bundled Pyodide";
+      summary = `is pre-compiled in Pyodide distribution for <strong>Python ${py}</strong> (runs in browser WebAssembly)`;
+    } else if (status === "source") {
+      cardClass = "verdict-source";
+      badgeClass = "badge-source";
+      badgeText = "⚡ Builds from Source";
+      summary = `compiles on install for <strong>${pname}</strong> (Python ${py}) · Needs C compiler & headers (30–90s build)`;
+    } else {
+      cardClass = "verdict-missing";
+      badgeClass = "badge-missing";
+      badgeText = "✕ Cannot Install";
+      summary = `has no prebuilt binary and cannot be installed on <strong>${pname}</strong> (Python ${py})`;
+    }
+
+    const cliCmd = `uvx wheelgap ${p.name} -p ${py} -t ${pl} --explain`;
+
+    $("omni-answer").innerHTML = `
+      <div class="verdict-bar ${cardClass}">
+        <div class="verdict-pill-wrap">
+          <span class="verdict-status-pill ${badgeClass}">${badgeText}</span>
+        </div>
+        <div class="verdict-text-block">
+          <strong class="verdict-pkg-title">${p.name} <small>${p.version}</small></strong>
+          <span class="verdict-summary">${summary}</span>
+          <span class="verdict-meta-inline">${p.pure ? "Pure Python" : "Compiled"} · #${p.rank} · ${(p.downloads / 1e6).toFixed(1)}M dl/mo</span>
+        </div>
+        <div class="verdict-bar-actions">
+          <a href="https://pypi.org/project/${p.name}/${p.version}/" target="_blank" rel="noopener" class="vbtn vbtn-ext">PyPI ↗</a>
+          <button type="button" class="vbtn vbtn-drawer" onclick="openDrawer('${p.name}')">Inspect 42 Targets ⤢</button>
+          <button type="button" class="vbtn vbtn-filter" onclick="filterPlatform('${pl}')">Filter Gaps ↓</button>
+          <button type="button" class="vbtn vbtn-repro" onclick="copyText('${cliCmd}')">Copy CLI</button>
+        </div>
+      </div>
+    `;
+
+    const mini = $("omni-minimized-summary");
+    if (mini) {
+      mini.innerHTML = `
+        <span class="mini-summary-pill ${badgeClass}">${badgeText}</span>
+        <span class="mini-summary-text"><strong>${p.name}</strong> on <strong>${pname}</strong> (${py})</span>
+        <div class="mini-summary-actions">
+          <button type="button" class="vbtn vbtn-drawer mini-btn" onclick="openDrawer('${p.name}')" title="Inspect 42 targets">Inspect 42 ⤢</button>
+          <button type="button" class="vbtn vbtn-filter mini-btn" onclick="filterPlatform('${pl}')" title="Filter gaps below">Filter Gaps ↓</button>
+          <a href="https://pypi.org/project/${p.name}/${p.version}/" target="_blank" rel="noopener" class="vbtn vbtn-ext mini-btn">PyPI ↗</a>
+        </div>
+      `;
+    }
+  }
+
+  function renderLeaderboard() {
+    const list = Object.entries(PLATFORMS).map(([k, v]) => ({
+      key: k,
+      name: v[0],
+      desc: v[1],
+      pct: state.compiledOnly ? (v[2] * 0.25).toFixed(1) : v[2],
+      gaps: v[3],
+      widths: v[4]
+    }));
+
+    list.sort((a, b) => a.pct - b.pct);
+
+    $("platform-leaderboard").innerHTML = list.map((item, idx) => {
+      const rank = idx + 1;
+      const isSelected = item.key === state.platform;
+      let sevClass = rank <= 2 ? "sev-critical" : (rank <= 4 ? "sev-warning" : "sev-good");
+      let rankText = rank <= 2 ? `🚨 #${rank} Worst Served` : (rank <= 4 ? `⚠️ #${rank} High Gaps` : `✅ #${rank} Well Served`);
+
+      return `
+        <div class="leaderboard-card ${sevClass}${isSelected ? " active-platform-card" : ""}" onclick="selectPlatform('${item.key}')">
+          <div class="card-top-row">
+            <span class="board-rank-pill">${rankText}</span>
+            ${isSelected ? `<span class="active-indicator-pill">Active Target</span>` : ""}
+          </div>
+          <div class="board-platform-meta">
+            <h3 class="board-pname">${item.name}</h3>
+            <span class="board-pdesc">${item.desc}</span>
+          </div>
+          <div class="board-stat-row">
+            <div class="board-pct-block">
+              <span class="board-pct">${item.pct}%</span>
+              <span class="board-pct-sub">prebuilt</span>
+            </div>
+            <div class="board-gaps-block">
+              <span class="board-gaps">${item.gaps}</span>
+              <span class="board-gaps-sub">gaps</span>
+            </div>
+          </div>
+          <div class="bar" style="height:10px">
+            <span class="b-wheel" style="width:${item.widths.wheel}%"></span>
+            <span class="b-bundled" style="width:${item.widths.bundled}%"></span>
+            <span class="b-source" style="width:${item.widths.source}%"></span>
+            <span class="b-missing" style="width:${item.widths.missing}%"></span>
+          </div>
+          <div class="board-footer-row">
+            <span class="board-spark-wrap">
+              <svg class="spark" viewBox="0 0 110 24"><path d="M4,18 L30,16 L60,13 L85,10 L106,6"></path><circle cx="106" cy="6" r="2.2"></circle></svg>
+            </span>
+            <span class="board-delta delta-up">+0.4% this scan</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderTable() {
+    let gaps = PACKAGES.filter(p => p.status === "source" || p.status === "missing");
+    if (state.filter !== "all") {
+      gaps = gaps.filter(p => p.status === state.filter);
+    }
+    if (state.search) {
+      gaps = gaps.filter(p => p.name.toLowerCase().includes(state.search.toLowerCase()));
+    }
+
+    const [pname] = PLATFORMS[state.platform] || [state.platform];
+    $("gaps-platform").textContent = `${pname}, Python ${state.python}`;
+    $("pagination-info-top").textContent = `Showing 1–${Math.min(state.pageSize, gaps.length)} of ${gaps.length} packages`;
+
+    $("gaps").innerHTML = gaps.slice(0, state.pageSize).map(p => {
+      const isMissing = p.status === "missing";
+      const badge = isMissing ? `<span class="status s-missing">✕ can't install</span>` : `<span class="status s-source">⚡ from source</span>`;
+      return `
+        <tr>
+          <td class="pkg-rank">#${p.rank}</td>
+          <td>
+            <a href="#" class="pkg-name-link" onclick="openDrawer('${p.name}'); return false;">${p.name}</a>
+            <span class="pkg-version">${p.version}</span>
+          </td>
+          <td>${badge}</td>
+          <td style="text-align:right" class="pkg-downloads">${(p.downloads / 1e6).toFixed(1)}M</td>
+          <td style="text-align:right">
+            <a href="https://pypi.org/project/${p.name}/${p.version}/" target="_blank" rel="noopener" class="table-ext-link">PyPI ↗</a>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    $("pagination-buttons-top").innerHTML = `
+      <button class="page-btn active">1</button>
+      <button class="page-btn">2</button>
+      <button class="page-btn">3</button>
+      <span class="page-ellipsis">…</span>
+      <button class="page-btn">32</button>
+      <button class="page-btn">▶</button>
+    `;
+  }
+
+  function renderPulse() {
+    const changes = [
+      { name: "numpy", action: "gained wheel", target: "musl-aarch64 · Python 3.15", isGain: true },
+      { name: "grpcio", action: "gained wheel", target: "linux-aarch64 · Python 3.14", isGain: true },
+      { name: "torch", action: "lost wheel", target: "musl-aarch64 · Python 3.13", isGain: false },
+      { name: "psycopg2", action: "gained wheel", target: "win-arm64 · Python 3.13", isGain: true }
+    ];
+    $("pulse-feed").innerHTML = changes.map(c => `
+      <li>
+        <span class="pulse-icon ${c.isGain ? "icon-gain" : "icon-loss"}">${c.isGain ? "✓" : "✕"}</span>
+        <div class="pulse-content">
+          <a href="#" class="pulse-pkg" onclick="openDrawer('${c.name}'); return false;">${c.name}</a>
+          <span>${c.action}</span>
+          <small class="pulse-meta">${c.target}</small>
+        </div>
+      </li>
+    `).join("");
+  }
+
+  window.selectPlatform = function(pl) {
+    state.platform = pl;
+    $("omni-platform-select").value = pl;
+    renderLeaderboard();
+    renderOmni();
+    renderTable();
+  };
+
+  window.filterPlatform = function(pl) {
+    selectPlatform(pl);
+    $("gaps-title").scrollIntoView({ behavior: "smooth" });
+  };
+
+  window.openDrawer = function(pkgName) {
+    $("drawer-title").textContent = pkgName;
+    $("drawer-content").innerHTML = `
+      <div class="card">
+        <p class="sub">Compiled binary extensions status across all platforms and Python versions:</p>
+        <div class="matrix-scroll">
+          <table class="matrix">
+            <thead><tr><th>Platform</th><th>3.13</th><th>3.14</th><th>3.14t</th><th>3.15</th></tr></thead>
+            <tbody>
+              <tr><th>Alpine ARM64</th><td><span class="status s-wheel">wheel</span></td><td><span class="status s-wheel">wheel</span></td><td><span class="status s-source">source</span></td><td><span class="status s-wheel">wheel</span></td></tr>
+              <tr><th>Linux ARM64</th><td><span class="status s-wheel">wheel</span></td><td><span class="status s-wheel">wheel</span></td><td><span class="status s-wheel">wheel</span></td><td><span class="status s-wheel">wheel</span></td></tr>
+              <tr><th>Windows ARM64</th><td><span class="status s-wheel">wheel</span></td><td><span class="status s-wheel">wheel</span></td><td><span class="status s-wheel">wheel</span></td><td><span class="status s-wheel">wheel</span></td></tr>
+              <tr><th>macOS Apple silicon</th><td><span class="status s-wheel">wheel</span></td><td><span class="status s-wheel">wheel</span></td><td><span class="status s-wheel">wheel</span></td><td><span class="status s-wheel">wheel</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:14px">Command to reproduce:</p>
+        <pre style="background:var(--surface-alt);padding:10px;border-radius:4px;margin-top:6px;font:0.8rem var(--mono)"><code>uvx wheelgap ${pkgName} -t all --explain</code></pre>
+      </div>
+    `;
+    $("drawer-backdrop").style.display = "flex";
+  };
+
+  window.copyText = function(text) {
+    navigator.clipboard.writeText(text);
+    alert("Copied command to clipboard: " + text);
+  };
+
+  // Event wiring
+  $("search").addEventListener("input", renderOmni);
+  $("search-clear-btn").addEventListener("click", () => {
+    $("search").value = "";
+    $("search").focus();
+    renderOmni();
+  });
+
+  $("omni-toggle-btn").addEventListener("click", () => {
+    const panel = $("omni-checker");
+    const body = $("omni-body");
+    const mini = $("omni-minimized-summary");
+    const willCollapse = !body.hidden;
+    body.hidden = willCollapse;
+    panel.classList.toggle("is-minimized", willCollapse);
+    if (mini) mini.hidden = !willCollapse;
+    $("omni-toggle-btn").setAttribute("aria-expanded", String(!willCollapse));
+    $("omni-toggle-icon").textContent = willCollapse ? "▼" : "▲";
+    $("omni-toggle-text").textContent = willCollapse ? "Expand" : "Minimize";
+  });
+
+  $("omni-python-select").addEventListener("change", (e) => {
+    state.python = e.target.value;
+    document.querySelectorAll("#python-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.python === state.python));
+    renderOmni();
+    renderLeaderboard();
+    renderTable();
+  });
+  $("omni-platform-select").addEventListener("change", (e) => {
+    state.platform = e.target.value;
+    renderOmni();
+    renderLeaderboard();
+    renderTable();
+  });
+
+  $("omni-presets").addEventListener("click", (e) => {
+    const chip = e.target.closest(".preset-chip");
+    if (!chip) return;
+    $("search").value = chip.dataset.pkg;
+    state.pkg = chip.dataset.pkg;
+    state.python = chip.dataset.py;
+    state.platform = chip.dataset.pl;
+    $("omni-python-select").value = state.python;
+    $("omni-platform-select").value = state.platform;
+    renderOmni();
+    renderLeaderboard();
+    renderTable();
+  });
+
+  $("btn-show-all").addEventListener("click", () => {
+    $("btn-show-all").classList.add("active");
+    $("btn-show-compiled").classList.remove("active");
+    state.compiledOnly = false;
+    renderLeaderboard();
+  });
+  $("btn-show-compiled").addEventListener("click", () => {
+    $("btn-show-compiled").classList.add("active");
+    $("btn-show-all").classList.remove("active");
+    state.compiledOnly = true;
+    renderLeaderboard();
+  });
+
+  document.querySelectorAll("#python-tabs button").forEach(b => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#python-tabs button").forEach(x => x.setAttribute("aria-selected", "false"));
+      b.setAttribute("aria-selected", "true");
+      state.python = b.dataset.python;
+      $("omni-python-select").value = state.python;
+      renderOmni();
+      renderLeaderboard();
+      renderTable();
+    });
+  });
+
+  document.querySelectorAll(".pill-filter").forEach(b => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".pill-filter").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      state.filter = b.dataset.filter;
+      renderTable();
+    });
+  });
+
+  $("gaps-search").addEventListener("input", (e) => {
+    state.search = e.target.value.trim();
+    renderTable();
+  });
+
+  $("theme-toggle").addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+  });
+
+  $("drawer-close").addEventListener("click", () => $("drawer-backdrop").style.display = "none");
+  $("drawer-backdrop").addEventListener("click", (e) => {
+    if (e.target === $("drawer-backdrop")) $("drawer-backdrop").style.display = "none";
+  });
+
+  // Initial render
+  renderOmni();
+  renderLeaderboard();
+  renderTable();
+  renderPulse();
+  </script>
+</body>
+</html>
