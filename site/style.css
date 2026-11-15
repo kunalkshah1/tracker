@@ -1463,6 +1463,120 @@ button, input, select {
   text-decoration: none;
 }
 
+/* Mobile Quick Toolbar (Merged into grid on mobile) */
+.mobile-quick-toolbar {
+  display: none;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+}
+@media (max-width: 860px) {
+  .mobile-quick-toolbar {
+    display: flex;
+  }
+}
+.mobile-quick-label {
+  font: 700 0.72rem var(--mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.mobile-quick-chip {
+  all: unset;
+  box-sizing: border-box;
+  font: 600 0.74rem var(--sans);
+  padding: 3px 9px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.12s ease;
+}
+.mobile-quick-chip:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+/* Inline Expandable Row for Mobile & Compact View */
+.row-expand-btn {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: all 0.12s ease;
+}
+.row-expand-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.gap-inline-row td {
+  padding: 0 !important;
+  background: var(--surface-alt);
+  border-bottom: 2px solid var(--amber) !important;
+}
+.inline-compat-card {
+  padding: 12px 14px;
+  background: var(--surface-alt);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inline-compat-head {
+  font-size: 0.84rem;
+  color: var(--text);
+}
+.inline-targets-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.inline-target-pill {
+  font: 600 0.72rem var(--mono);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+}
+.inline-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line);
+}
+.inline-cli-cmd {
+  font: 500 0.76rem var(--mono);
+  background: var(--surface);
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  max-width: 100%;
+}
+.inline-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* Status Badges */
 .status {
   display: inline-flex;

@@ -295,6 +295,25 @@ code, kbd { font-family: var(--mono); }
 .pkg-rank, .pkg-downloads { font: 0.8rem var(--mono); color: var(--text-faint); font-variant-numeric: tabular-nums; }
 .table-ext-link { font: 500 0.74rem var(--sans); color: var(--text-muted); padding: 2px 7px; border: 1px solid var(--line); border-radius: var(--radius-sm); display: inline-block; white-space: nowrap; margin-left: 3px; }
 .table-ext-link:hover { background: var(--surface-hover); color: var(--text); text-decoration: none; }
+
+/* Mobile Quick Toolbar (Merged into grid on mobile) */
+.mobile-quick-toolbar { display: none; align-items: center; flex-wrap: wrap; gap: 6px; padding: 7px 10px; background: var(--surface-alt); border: 1px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 8px; }
+@media (max-width: 860px) { .mobile-quick-toolbar { display: flex; } }
+.mobile-quick-label { font: 700 0.7rem var(--mono); color: var(--text-muted); text-transform: uppercase; }
+.mobile-quick-chip { all: unset; box-sizing: border-box; font: 600 0.72rem var(--sans); padding: 3px 8px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-full); color: var(--text); cursor: pointer; text-decoration: none; transition: all 0.12s ease; }
+.mobile-quick-chip:hover { background: var(--surface-hover); color: var(--text); border-color: var(--line-strong); }
+
+/* Inline Expandable Row for Mobile & Compact View */
+.row-expand-btn { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: var(--radius-sm); background: var(--surface-alt); border: 1px solid var(--line); color: var(--text-muted); font-size: 0.7rem; cursor: pointer; margin-left: 4px; transition: all 0.12s ease; }
+.row-expand-btn:hover { background: var(--surface-hover); color: var(--text); }
+.gap-inline-row td { padding: 0 !important; background: var(--surface-alt); border-bottom: 2px solid var(--amber) !important; }
+.inline-compat-card { padding: 10px 12px; background: var(--surface-alt); display: flex; flex-direction: column; gap: 6px; }
+.inline-compat-head { font-size: 0.82rem; color: var(--text); }
+.inline-targets-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.inline-target-pill { font: 600 0.7rem var(--mono); padding: 2px 7px; border-radius: var(--radius-sm); }
+.inline-actions-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--line); }
+.inline-cli-cmd { font: 500 0.74rem var(--mono); background: var(--surface); padding: 3px 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow-x: auto; max-width: 100%; }
+.inline-btns { display: flex; align-items: center; gap: 5px; }
 .status { display: inline-flex; align-items: center; gap: 4px; font: 600 0.74rem var(--mono); padding: 2px 8px; border-radius: var(--radius-full); white-space: nowrap; }
 .s-wheel { color: var(--wheel); background: var(--wheel-bg); }
 .s-source { color: var(--source); background: var(--source-bg); }
@@ -525,6 +544,14 @@ code, kbd { font-family: var(--mono); }
               <p class="section-sub">Sortable and filterable. Click any row to inspect full cross-platform compatibility.</p>
             </div>
 
+            <!-- Mobile Quick Toolbar (Merged into grid on mobile) -->
+            <div class="mobile-quick-toolbar" id="mobile-quick-toolbar">
+              <span class="mobile-quick-label">Quick Links:</span>
+              <a href="#pulse-title" class="mobile-quick-chip">📈 Recent Changes</a>
+              <a href="#health-hub" class="mobile-quick-chip">🚨 Worst Served</a>
+              <a href="#omni-checker" class="mobile-quick-chip">⚡ Instant Check</a>
+            </div>
+
             <div class="filter-toolbar">
               <div class="status-filter-pills" role="radiogroup">
                 <button type="button" class="pill-filter active" data-filter="all">All Gaps</button>
@@ -681,7 +708,27 @@ code, kbd { font-family: var(--mono); }
     { name: "fastapi", rank: 45, version: "0.115.6", pure: true, downloads: 640110200, status: "wheel" },
     { name: "anyio", rank: 52, version: "4.7.0", pure: true, downloads: 590110200, status: "wheel" },
     { name: "sqlalchemy", rank: 60, version: "2.0.36", pure: false, downloads: 520110200, status: "wheel" },
-    { name: "pydantic-settings", rank: 88, version: "2.7.0", pure: true, downloads: 380110200, status: "wheel" }
+    { name: "pydantic-settings", rank: 88, version: "2.7.0", pure: true, downloads: 380110200, status: "wheel" },
+    { name: "cython", rank: 150, version: "3.0.11", pure: false, downloads: 230110200, status: "source" },
+    { name: "ujson", rank: 160, version: "5.10.0", pure: false, downloads: 215110200, status: "source" },
+    { name: "pycryptodome", rank: 175, version: "3.21.0", pure: false, downloads: 198110200, status: "source" },
+    { name: "pyzmq", rank: 185, version: "26.2.0", pure: false, downloads: 184110200, status: "source" },
+    { name: "lz4", rank: 195, version: "4.3.3", pure: false, downloads: 172110200, status: "source" },
+    { name: "python-snappy", rank: 210, version: "0.7.3", pure: false, downloads: 155110200, status: "missing" },
+    { name: "fastparquet", rank: 220, version: "2024.11.0", pure: false, downloads: 142110200, status: "source" },
+    { name: "tables", rank: 240, version: "3.10.1", pure: false, downloads: 125110200, status: "missing" },
+    { name: "gevent", rank: 270, version: "24.11.1", pure: false, downloads: 105110200, status: "source" },
+    { name: "twisted", rank: 280, version: "24.11.0", pure: false, downloads: 98110200, status: "source" },
+    { name: "uvloop", rank: 290, version: "0.21.0", pure: false, downloads: 88110200, status: "source" },
+    { name: "grpcio-tools", rank: 310, version: "1.68.1", pure: false, downloads: 78110200, status: "source" },
+    { name: "soundfile", rank: 330, version: "0.13.1", pure: false, downloads: 71110200, status: "missing" },
+    { name: "opencv-python", rank: 340, version: "4.10.0.84", pure: false, downloads: 68110200, status: "missing" },
+    { name: "tokenizers", rank: 350, version: "0.21.0", pure: false, downloads: 66110200, status: "source" },
+    { name: "safetensors", rank: 360, version: "0.4.5", pure: false, downloads: 64110200, status: "source" },
+    { name: "bitsandbytes", rank: 410, version: "0.45.0", pure: false, downloads: 55110200, status: "missing" },
+    { name: "flash-attn", rank: 420, version: "2.7.2.post1", pure: false, downloads: 52110200, status: "missing" },
+    { name: "xgboost", rank: 165, version: "2.1.3", pure: false, downloads: 210110200, status: "missing" },
+    { name: "lightgbm", rank: 180, version: "4.5.0", pure: false, downloads: 190110200, status: "source" }
   ];
 
   const state = {
@@ -690,9 +737,10 @@ code, kbd { font-family: var(--mono); }
     platform: "musl-aarch64",
     filter: "all",
     search: "",
-    pageSize: 25,
+    pageSize: 10,
     page: 1,
-    compiledOnly: false
+    compiledOnly: false,
+    expandedPkg: null
   };
 
   const $ = (id) => document.getElementById(id);
@@ -839,47 +887,143 @@ code, kbd { font-family: var(--mono); }
     }).join("");
   }
 
+  function renderPagination(totalItems) {
+    const size = state.pageSize === "all" ? totalItems : Number(state.pageSize);
+    const totalPages = Math.max(1, Math.ceil(totalItems / size));
+    if (state.page > totalPages) state.page = totalPages;
+
+    const start = totalItems === 0 ? 0 : (state.page - 1) * size + 1;
+    const end = state.pageSize === "all" ? totalItems : Math.min(totalItems, state.page * size);
+    const infoText = `Showing ${start}–${end} of ${totalItems} packages`;
+
+    if ($("pagination-info-top")) $("pagination-info-top").textContent = infoText;
+    if ($("pagination-info-bottom")) $("pagination-info-bottom").textContent = infoText;
+
+    let btns = [];
+    if (totalPages > 1) {
+      btns.push(`<button type="button" class="page-btn" data-page="${state.page - 1}" ${state.page === 1 ? "disabled" : ""} title="Previous page">◀</button>`);
+      for (let p = 1; p <= totalPages; p++) {
+        const isActive = p === state.page;
+        btns.push(`<button type="button" class="page-btn${isActive ? " active" : ""}" data-page="${p}">${p}</button>`);
+      }
+      btns.push(`<button type="button" class="page-btn" data-page="${state.page + 1}" ${state.page === totalPages ? "disabled" : ""} title="Next page">▶</button>`);
+    }
+
+    const html = btns.join("");
+    if ($("pagination-buttons-top")) $("pagination-buttons-top").innerHTML = html;
+    if ($("pagination-buttons-bottom")) $("pagination-buttons-bottom").innerHTML = html;
+
+    if ($("page-size-top")) $("page-size-top").value = String(state.pageSize);
+    if ($("page-size-bottom")) $("page-size-bottom").value = String(state.pageSize);
+  }
+
   function renderTable() {
     let gaps = PACKAGES.filter(p => p.status === "source" || p.status === "missing");
-    if (state.filter !== "all") {
-      gaps = gaps.filter(p => p.status === state.filter);
+    if (state.filter === "source") {
+      gaps = gaps.filter(p => p.status === "source");
+    } else if (state.filter === "missing") {
+      gaps = gaps.filter(p => p.status === "missing");
     }
     if (state.search) {
-      gaps = gaps.filter(p => p.name.toLowerCase().includes(state.search.toLowerCase()));
+      const q = state.search.toLowerCase();
+      gaps = gaps.filter(p => p.name.toLowerCase().includes(q));
     }
 
     const [pname] = PLATFORMS[state.platform] || [state.platform];
     $("gaps-platform").textContent = `${pname}, Python ${state.python}`;
-    $("pagination-info-top").textContent = `Showing 1–${Math.min(state.pageSize, gaps.length)} of ${gaps.length} packages`;
 
-    $("gaps").innerHTML = gaps.slice(0, state.pageSize).map(p => {
+    const total = gaps.length;
+    renderPagination(total);
+
+    if (total === 0) {
+      $("gaps").innerHTML = `<tr><td colspan="5" class="empty" style="padding:22px;text-align:center;color:var(--text-muted)">No matching packages found.</td></tr>`;
+      return;
+    }
+
+    const size = state.pageSize === "all" ? total : Number(state.pageSize);
+    const startIdx = (state.page - 1) * size;
+    const visible = gaps.slice(startIdx, startIdx + size);
+
+    $("gaps").innerHTML = visible.map(p => {
       const isMissing = p.status === "missing";
       const badge = isMissing ? `<span class="status s-missing">✕ can't install</span>` : `<span class="status s-source">⚡ from source</span>`;
-      return `
-        <tr>
+      const isExpanded = state.expandedPkg === p.name;
+      const cliCmd = `uvx wheelgap ${p.name} -p ${state.python} -t ${state.platform} --explain`;
+      const pypiUrl = `https://pypi.org/project/${p.name}/${p.version}/`;
+
+      let html = `
+        <tr class="gap-row ${isExpanded ? "row-expanded" : ""}" data-pkg="${p.name}">
           <td class="pkg-rank">#${p.rank}</td>
           <td>
-            <a href="#" class="pkg-name-link" onclick="openDrawer('${p.name}'); return false;">${p.name}</a>
+            <a href="#" class="pkg-name-link" onclick="handlePackageClick('${p.name}', event)">${p.name}</a>
             <span class="pkg-version">${p.version}</span>
           </td>
           <td>${badge}</td>
           <td style="text-align:right" class="pkg-downloads">${(p.downloads / 1e6).toFixed(1)}M</td>
           <td style="text-align:right">
-            <a href="https://pypi.org/project/${p.name}/${p.version}/" target="_blank" rel="noopener" class="table-ext-link">PyPI ↗</a>
+            <a href="${pypiUrl}" target="_blank" rel="noopener" class="table-ext-link">PyPI ↗</a>
+            <button type="button" class="row-expand-btn" onclick="handlePackageClick('${p.name}', event)" aria-label="Toggle details">${isExpanded ? "▲" : "▼"}</button>
           </td>
         </tr>
       `;
-    }).join("");
 
-    $("pagination-buttons-top").innerHTML = `
-      <button class="page-btn active">1</button>
-      <button class="page-btn">2</button>
-      <button class="page-btn">3</button>
-      <span class="page-ellipsis">…</span>
-      <button class="page-btn">32</button>
-      <button class="page-btn">▶</button>
-    `;
+      if (isExpanded) {
+        html += `
+          <tr class="gap-inline-row">
+            <td colspan="5">
+              <div class="inline-compat-card">
+                <div class="inline-compat-head">
+                  <strong>${p.name}</strong> <span>compatibility across key targets:</span>
+                </div>
+                <div class="inline-targets-pills">
+                  <span class="inline-target-pill ${isMissing ? "pill-missing" : "pill-source"}">Alpine ARM: ${isMissing ? "✕ cannot install" : "⚡ source"}</span>
+                  <span class="inline-target-pill pill-wheel">Linux x86: ✓ wheel</span>
+                  <span class="inline-target-pill pill-wheel">macOS ARM: ✓ wheel</span>
+                  <span class="inline-target-pill ${isMissing ? "pill-missing" : "pill-wheel"}">Win ARM: ${isMissing ? "✕ missing" : "✓ wheel"}</span>
+                </div>
+                <div class="inline-actions-row">
+                  <code class="inline-cli-cmd">${cliCmd}</code>
+                  <div class="inline-btns">
+                    <button type="button" class="vbtn vbtn-repro" onclick="copyText('${cliCmd}')">Copy CLI</button>
+                    <a href="${pypiUrl}" target="_blank" rel="noopener" class="vbtn vbtn-ext">PyPI ↗</a>
+                    <button type="button" class="vbtn vbtn-drawer" onclick="openDrawer('${p.name}')">Full 42 Targets ⤢</button>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+
+      return html;
+    }).join("");
   }
+
+  window.handlePackageClick = function(pkgName, e) {
+    if (e) e.preventDefault();
+    if (window.innerWidth <= 640) {
+      state.expandedPkg = state.expandedPkg === pkgName ? null : pkgName;
+      renderTable();
+    } else {
+      openDrawer(pkgName);
+    }
+  };
+
+  window.handlePageClick = function(e) {
+    const btn = e.target.closest(".page-btn");
+    if (!btn || btn.disabled) return;
+    const p = Number(btn.dataset.page);
+    if (!Number.isFinite(p) || p === state.page) return;
+    state.page = p;
+    renderTable();
+    $("gaps-title").scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  window.handlePageSizeChange = function(e) {
+    state.pageSize = e.target.value;
+    state.page = 1;
+    renderTable();
+  };
 
   function renderPulse() {
     const changes = [
@@ -1102,14 +1246,22 @@ code, kbd { font-family: var(--mono); }
       document.querySelectorAll(".pill-filter").forEach(x => x.classList.remove("active"));
       b.classList.add("active");
       state.filter = b.dataset.filter;
+      state.page = 1;
       renderTable();
     });
   });
 
   $("gaps-search").addEventListener("input", (e) => {
     state.search = e.target.value.trim();
+    state.page = 1;
     renderTable();
   });
+
+  $("pagination-buttons-top")?.addEventListener("click", handlePageClick);
+  $("pagination-buttons-bottom")?.addEventListener("click", handlePageClick);
+
+  $("page-size-top")?.addEventListener("change", handlePageSizeChange);
+  $("page-size-bottom")?.addEventListener("change", handlePageSizeChange);
 
   $("theme-toggle").addEventListener("click", () => {
     const cur = document.documentElement.getAttribute("data-theme");

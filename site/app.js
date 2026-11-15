@@ -671,7 +671,12 @@ function renderGaps() {
   const rows = visible.map((p) => {
     const s = p.results[i];
     const pureBadge = p.pure ? ` <span class="status s-wheel" style="font-size:0.68rem;padding:1px 6px">pure</span>` : "";
-    return `<tr>
+    const isExpanded = state.expandedPkg === p.name;
+    const isMissing = s === "missing";
+    const cliCmd = whyCommand(p.name, p.version, state.python, state.platform, state.pyodide);
+    const pypiUrl = `https://pypi.org/project/${encodeURIComponent(p.name)}/${encodeURIComponent(p.version ?? "")}/`;
+
+    let html = `<tr class="gap-row ${isExpanded ? "row-expanded" : ""}" data-pkg="${esc(p.name)}">
       <td class="pkg-rank">#${esc(p.rank)}</td>
       <td>
         <a href="#package=${encodeURIComponent(p.name)}" class="pkg-name-link" data-pkg="${esc(p.name)}" title="Inspect compatibility">${esc(p.name)}</a>
@@ -680,10 +685,37 @@ function renderGaps() {
       <td>${statusBadge(s)}</td>
       <td style="text-align:right" class="pkg-downloads" title="${fmt(p.downloads)} downloads">${formatDownloads(p.downloads)}</td>
       <td style="text-align:right" style="white-space:nowrap">
-        <a href="https://pypi.org/project/${encodeURIComponent(p.name)}/${encodeURIComponent(p.version ?? "")}/" target="_blank" rel="noopener" class="table-ext-link" title="Open package release on PyPI">PyPI ↗</a>
-        <a href="p/${esc(canonicalName(p.name))}/" class="table-ext-link" title="Internal package overview page">Page ↗</a>
+        <a href="${pypiUrl}" target="_blank" rel="noopener" class="table-ext-link" title="Open package release on PyPI">PyPI ↗</a>
+        <button type="button" class="row-expand-btn" data-pkg="${esc(p.name)}" aria-label="Toggle details">${isExpanded ? "▲" : "▼"}</button>
       </td>
     </tr>`;
+
+    if (isExpanded) {
+      html += `<tr class="gap-inline-row">
+        <td colspan="5">
+          <div class="inline-compat-card">
+            <div class="inline-compat-head">
+              <strong>${esc(p.name)}</strong> compatibility summary:
+            </div>
+            <div class="inline-targets-pills">
+              <span class="inline-target-pill ${isMissing ? "pill-missing" : "pill-source"}">This Platform (${esc(state.platform)}): ${isMissing ? "✕ cannot install" : "⚡ builds from source"}</span>
+              <span class="inline-target-pill pill-wheel">Pure Python: ${p.pure ? "Yes (installs anywhere)" : "No (compiled code)"}</span>
+              <span class="inline-target-pill pill-wheel">Rank: #${esc(p.rank)}</span>
+            </div>
+            <div class="inline-actions-row">
+              <code class="inline-cli-cmd">${esc(cliCmd)}</code>
+              <div class="inline-btns">
+                <button type="button" class="vbtn vbtn-repro btn-copy-repro" data-cmd="${esc(cliCmd)}">Copy CLI</button>
+                <a href="${pypiUrl}" target="_blank" rel="noopener" class="vbtn vbtn-ext">PyPI ↗</a>
+                <button type="button" class="vbtn vbtn-drawer" data-pkg="${esc(p.name)}">Full 42 Targets ⤢</button>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    }
+
+    return html;
   });
 
   $("gaps").innerHTML = rows.join("");
@@ -1276,11 +1308,26 @@ async function main() {
       return;
     }
 
-    // Existing package links
+    // Row expand caret button (Inline expansion)
+    const expandBtn = e.target.closest(".row-expand-btn");
+    if (expandBtn && expandBtn.dataset.pkg) {
+      e.preventDefault();
+      state.expandedPkg = state.expandedPkg === expandBtn.dataset.pkg ? null : expandBtn.dataset.pkg;
+      renderGaps();
+      return;
+    }
+
+    // Existing package links (mobile uses inline accordion, desktop uses drawer)
     const link = e.target.closest("a[data-pkg], .pkg-name-link");
     if (link && link.dataset.pkg) {
       e.preventDefault();
-      openDrawer(link.dataset.pkg);
+      if (window.innerWidth <= 640) {
+        state.expandedPkg = state.expandedPkg === link.dataset.pkg ? null : link.dataset.pkg;
+        renderGaps();
+      } else {
+        openDrawer(link.dataset.pkg);
+      }
+      return;
     }
   });
 

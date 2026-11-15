@@ -187,6 +187,6 @@ test("Omni-checker and Leaderboard logic with actual dataset", () => {
   // Test Gaps Table
   vm.runInContext("renderGaps()", context);
   const gapsHtml = getEl("gaps").innerHTML;
-  assert.ok(gapsHtml.includes("<tr>"), "gaps table has rows for Alpine ARM64");
+  assert.ok(gapsHtml.includes("<tr"), "gaps table has rows for Alpine ARM64");
   assert.ok(getEl("pagination-info-top").textContent.includes("Showing 1–25"), "pagination info shows page 1-25");
 });
