@@ -1007,16 +1007,26 @@ function renderAll() {
   writeHash();
 }
 
-// Autocomplete Menu for Look Up input (top 6 matches, lightweight & fast)
+// Autocomplete Menu for Look Up input (top 8 matches, lightweight & fast)
 function updateSearchAutocomplete(value) {
   const menu = $("search-autocomplete");
   if (!menu) return;
   const q = value.trim().toLowerCase();
-  if (!q || q.length < 2) {
+  if (!q || q.length < 1) {
     menu.hidden = true;
     return;
   }
-  const matches = state.data.packages.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 6);
+  const matches = state.data.packages
+    .filter((p) => p.name.toLowerCase().includes(q))
+    .sort((a, b) => {
+      const aStarts = a.name.toLowerCase().startsWith(q);
+      const bStarts = b.name.toLowerCase().startsWith(q);
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+      return (a.rank ?? 9999) - (b.rank ?? 9999);
+    })
+    .slice(0, 8);
+
   if (!matches.length) {
     menu.hidden = true;
     return;
@@ -1327,6 +1337,11 @@ async function main() {
     updateSearchAutocomplete(e.target.value);
     renderOmniAnswer();
   });
+  $("search").addEventListener("focus", (e) => {
+    if (e.target.value.trim().length >= 1) {
+      updateSearchAutocomplete(e.target.value);
+    }
+  });
   $("search").addEventListener("change", () => {
     updateClearBtn();
     renderOmniAnswer();
@@ -1341,6 +1356,20 @@ async function main() {
     $("search-autocomplete").hidden = true;
     renderOmniAnswer();
     renderLookup(item.dataset.name);
+    writeHash();
+  });
+
+  // Omni Checker Clear All & Reset
+  $("omni-reset-btn")?.addEventListener("click", () => {
+    $("search").value = "";
+    state.python = "3.13";
+    state.platform = "musl-aarch64";
+    state.currentPage = 1;
+    populateOmniSelects();
+    updateClearBtn();
+    if ($("search-autocomplete")) $("search-autocomplete").hidden = true;
+    renderAll();
+    renderLookup("");
     writeHash();
   });
 

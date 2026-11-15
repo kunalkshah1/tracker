@@ -220,7 +220,10 @@ code, kbd { font-family: var(--mono); }
 
 .omni-select { height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: 500 0.85rem var(--mono); font-size: 16px; cursor: pointer; width: 100%; }
 @media (min-width: 641px) { .omni-select { font-size: 0.84rem; } }
-.btn-primary { height: 38px; padding: 0 16px; font-size: 0.86rem; background: var(--navy); color: #fff; border: none; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; }
+.omni-actions-group { display: flex; align-items: center; gap: 6px; }
+.btn-primary { height: 38px; padding: 0 16px; font-size: 0.86rem; background: var(--navy); color: #fff; border: none; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn-secondary { height: 38px; padding: 0 12px; font-size: 0.84rem; background: var(--surface-alt); color: var(--text-muted); border: 1px solid var(--line); border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.12s ease; }
+.btn-secondary:hover { background: var(--surface-hover); color: var(--text); border-color: var(--line-strong); }
 
 .omni-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 7px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
 .preset-label { font-size: 0.74rem; color: var(--text-faint); font-weight: 600; font-family: var(--mono); }
@@ -488,7 +491,11 @@ code, kbd { font-family: var(--mono); }
             </div>
 
             <div class="omni-field omni-action-field">
-              <button type="submit" class="btn-primary" id="omni-submit-btn">Check</button>
+              <label class="omni-label" style="visibility:hidden">Action</label>
+              <div class="omni-actions-group">
+                <button type="submit" class="btn-primary" id="omni-submit-btn">Check</button>
+                <button type="button" class="btn-secondary" id="omni-reset-btn" title="Clear package and reset all filters">Clear All</button>
+              </div>
             </div>
           </form>
 
@@ -644,6 +651,7 @@ code, kbd { font-family: var(--mono); }
     { name: "triton", rank: 473, version: "3.9.0", pure: false, downloads: 51204900, status: "missing" },
     { name: "cffi", rank: 14, version: "1.17.1", pure: false, downloads: 1204500120, status: "source" },
     { name: "pydantic-core", rank: 28, version: "2.27.2", pure: false, downloads: 850230100, status: "wheel" },
+    { name: "pydantic", rank: 25, version: "2.10.4", pure: true, downloads: 910220100, status: "wheel" },
     { name: "pyyaml", rank: 35, version: "6.0.2", pure: false, downloads: 740112340, status: "source" },
     { name: "markupsafe", rank: 42, version: "3.0.2", pure: false, downloads: 680220190, status: "source" },
     { name: "greenlet", rank: 64, version: "3.1.1", pure: false, downloads: 490220110, status: "source" },
@@ -659,7 +667,21 @@ code, kbd { font-family: var(--mono); }
     { name: "pyarrow", rank: 118, version: "18.1.0", pure: false, downloads: 290110200, status: "wheel" },
     { name: "regex", rank: 125, version: "2024.11.13", pure: false, downloads: 275110200, status: "source" },
     { name: "wrapt", rank: 130, version: "1.17.0", pure: false, downloads: 260110200, status: "source" },
-    { name: "bcrypt", rank: 142, version: "4.2.1", pure: false, downloads: 240110200, status: "wheel" }
+    { name: "bcrypt", rank: 142, version: "4.2.1", pure: false, downloads: 240110200, status: "wheel" },
+    { name: "requests", rank: 2, version: "2.32.3", pure: true, downloads: 2100500120, status: "wheel" },
+    { name: "urllib3", rank: 3, version: "2.2.3", pure: true, downloads: 2050110200, status: "wheel" },
+    { name: "pip", rank: 5, version: "24.3.1", pure: true, downloads: 1850110200, status: "wheel" },
+    { name: "setuptools", rank: 6, version: "75.6.0", pure: true, downloads: 1720110200, status: "wheel" },
+    { name: "wheel", rank: 12, version: "0.45.1", pure: true, downloads: 1250110200, status: "wheel" },
+    { name: "boto3", rank: 8, version: "1.35.75", pure: true, downloads: 1400220100, status: "wheel" },
+    { name: "botocore", rank: 7, version: "1.35.75", pure: true, downloads: 1510220100, status: "wheel" },
+    { name: "pytest", rank: 18, version: "8.3.4", pure: true, downloads: 1090220100, status: "wheel" },
+    { name: "click", rank: 15, version: "8.1.7", pure: true, downloads: 1180220100, status: "wheel" },
+    { name: "jinja2", rank: 20, version: "3.1.4", pure: true, downloads: 1040220100, status: "wheel" },
+    { name: "fastapi", rank: 45, version: "0.115.6", pure: true, downloads: 640110200, status: "wheel" },
+    { name: "anyio", rank: 52, version: "4.7.0", pure: true, downloads: 590110200, status: "wheel" },
+    { name: "sqlalchemy", rank: 60, version: "2.0.36", pure: false, downloads: 520110200, status: "wheel" },
+    { name: "pydantic-settings", rank: 88, version: "2.7.0", pure: true, downloads: 380110200, status: "wheel" }
   ];
 
   const state = {
@@ -919,12 +941,94 @@ code, kbd { font-family: var(--mono); }
     alert("Copied command to clipboard: " + text);
   };
 
+  // Autocomplete Menu for Look Up input (top 8 matches, lightweight & fast)
+  function updateSearchAutocomplete(value) {
+    const menu = $("search-autocomplete");
+    if (!menu) return;
+    const q = value.trim().toLowerCase();
+    if (!q || q.length < 1) {
+      menu.hidden = true;
+      return;
+    }
+    const matches = PACKAGES
+      .filter(p => p.name.toLowerCase().includes(q))
+      .sort((a, b) => {
+        const aStarts = a.name.toLowerCase().startsWith(q);
+        const bStarts = b.name.toLowerCase().startsWith(q);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return (a.rank ?? 999) - (b.rank ?? 999);
+      })
+      .slice(0, 8);
+
+    if (!matches.length) {
+      menu.hidden = true;
+      return;
+    }
+
+    menu.innerHTML = matches.map(p => {
+      let bClass = "badge-wheel", bText = "wheel";
+      if (p.status === "bundled") { bClass = "badge-bundled"; bText = "bundled"; }
+      else if (p.status === "source") { bClass = "badge-source"; bText = "source"; }
+      else if (p.status === "missing") { bClass = "badge-missing"; bText = "missing"; }
+      return `
+        <div class="autocomplete-item" data-name="${p.name}">
+          <span class="autocomplete-name">${p.name} <small style="color:var(--text-faint)">${p.version}</small></span>
+          <span class="verdict-status-pill ${bClass}" style="padding:2px 7px;font-size:0.72rem">${bText}</span>
+        </div>
+      `;
+    }).join("");
+    menu.hidden = false;
+  }
+
   // Event wiring
-  $("search").addEventListener("input", renderOmni);
+  $("search").addEventListener("input", (e) => {
+    updateClearBtn();
+    updateSearchAutocomplete(e.target.value);
+    renderOmni();
+  });
+  $("search").addEventListener("focus", (e) => {
+    if (e.target.value.trim().length >= 1) {
+      updateSearchAutocomplete(e.target.value);
+    }
+  });
   $("search-clear-btn").addEventListener("click", () => {
     $("search").value = "";
     $("search").focus();
+    updateClearBtn();
+    if ($("search-autocomplete")) $("search-autocomplete").hidden = true;
     renderOmni();
+  });
+
+  $("search-autocomplete")?.addEventListener("click", (e) => {
+    const item = e.target.closest(".autocomplete-item");
+    if (!item) return;
+    $("search").value = item.dataset.name;
+    state.pkg = item.dataset.name;
+    updateClearBtn();
+    $("search-autocomplete").hidden = true;
+    renderOmni();
+  });
+
+  document.addEventListener("click", (e) => {
+    if ($("search-autocomplete") && !e.target.closest(".autocomplete-wrapper")) {
+      $("search-autocomplete").hidden = true;
+    }
+  });
+
+  // Omni Checker Clear All & Reset
+  $("omni-reset-btn")?.addEventListener("click", () => {
+    $("search").value = "";
+    state.pkg = "";
+    state.python = "3.13";
+    state.platform = "musl-aarch64";
+    $("omni-python-select").value = "3.13";
+    $("omni-platform-select").value = "musl-aarch64";
+    updateClearBtn();
+    if ($("search-autocomplete")) $("search-autocomplete").hidden = true;
+    renderOmni();
+    renderLeaderboard();
+    renderTable();
   });
 
   $("omni-toggle-btn").addEventListener("click", () => {

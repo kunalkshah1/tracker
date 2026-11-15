@@ -6,6 +6,33 @@
 
 A package without a wheel for your platform is compiled from source on install (slow, and it needs a compiler), or can't be installed at all. This site shows where those gaps are, package by package.
 
+## 🚀 2026 Enterprise Precision UI Preview
+
+> **Live Interactive Tracker:** **[https://kunalkshah1.github.io/tracker/](https://kunalkshah1.github.io/tracker/)**  
+> **Challenge Discussion:** [wheelgap/wheelgap#154](https://github.com/wheelgap/wheelgap/discussions/154) · **Challenge Issue:** [wheelgap/wheelgap#155](https://github.com/wheelgap/wheelgap/issues/155)
+
+### Desktop View (Light & Dark)
+<p align="center">
+  <img src="docs/screenshots/desktop-light.png" width="49%" alt="Desktop View Light Mode" />
+  <img src="docs/screenshots/desktop-dark.png" width="49%" alt="Desktop View Dark Mode" />
+</p>
+
+### Mobile View (Light & Dark)
+<p align="center">
+  <img src="docs/screenshots/mobile-light.png" width="45%" alt="Mobile View Light Mode" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-dark.png" width="45%" alt="Mobile View Dark Mode" />
+</p>
+
+### Key Revamp Highlights
+* **Macro-First Hierarchy:** Ecosystem Platform Health & Gap Ranking ranked worst-to-best at first glance.
+* **Instant Answer Omni-Checker:** Answers *"Does numpy have a wheel for Alpine ARM on Python 3.13?"* in < 2 seconds with an unequivocal one-liner verdict bar (`✓ Prebuilt Wheel`, `PyPI ↗`, `Inspect 42 Targets ⤢`, `Filter Gaps ↓`, `Copy CLI`).
+* **Collapsible to a 44px slim bar:** Minimizing collapses the entire form while keeping the selected package's verdict bar visible in the header.
+* **Autocomplete & Clear All:** Fast in-DOM typeassist ranking prefix matches first, dedicated `✕` clear button, and 1-click `Clear All` reset.
+* **Mobile-First Responsiveness:** No 5,000-option datalist freezes; 16px touch-friendly selects prevent iOS Safari auto-zoom; stacked cards adapt cleanly down to 360 px.
+* **2026 Enterprise Pagination:** Browse gap packages with 25, 50, 100, or All rows per page, instant name search filter, and status pills.
+* **100% Maintainer Aligned:** Plain HTML/CSS/JS in `site/`, zero npm dependencies, strict Content-Security-Policy (`default-src 'self'`), all dynamic computing from nightly JSON data.
+
 ## How it works
 
 - Every night, [`.github/workflows/scan.yml`](.github/workflows/scan.yml) runs [wheelgap](https://github.com/wheelgap/wheelgap)'s scanner (`python -m wheelgap.scan`) over the top packages from [top-pypi-packages](https://hugovk.dev/top-pypi-packages/). It checks each package's latest release against every platform.
