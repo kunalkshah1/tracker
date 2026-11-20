@@ -1,5 +1,6 @@
-// The repo checker's worker: loads Pyodide and wheelgap, fetches the repo's files from GitHub and the fixes' release
-// lists from PyPI (all from the browser, nothing goes through a server of ours), and runs driver.py on them.
+// The repo checker's worker: loads Pyodide and wheelgap, fetches the repo's files from GitHub, the fixes' release
+// lists from PyPI and the gap wheel list from wheelgap's gap wheel index (all from the browser, nothing goes through
+// a server of ours), and runs driver.py on them.
 // Messages in: {id, type: "load", repo} | {id, type: "check", lockfile, options}. Out: {id, type, ...}.
 
 import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v314.0.8/full/pyodide.mjs";

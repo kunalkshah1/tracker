@@ -4,6 +4,7 @@
 import {
   PLATFORMS, PYTHONS, parseRepo, pickLockfile, toQuery, fromQuery, sortPythons, freeThreaded,
   fixFor, rowsFor, headline, cliCommand, fixPrompt, verdictText, nextSteps, validRef, labVerdict, labFor, canonicalName, gapWheelFor,
+  gapWheelFixText,
 } from "./check-logic.mjs";
 
 const $ = (id) => document.getElementById(id);
@@ -113,9 +114,12 @@ worker.onmessage = ({ data }) => {
   if (data.type === "result") return onResult(data.result);
   if (data.type === "gap-wheels") {
     state.gapWheels = data.gapWheels;
+    // Said on the page, not only in the tag's tooltip: a touch screen or a keyboard never shows a title.
+    $("gap-wheels-note").textContent = state.gapWheels.text ? `Gap wheels are ${state.gapWheels.unofficial}.` : "";
     $("gap-wheels-text").textContent = state.gapWheels.text;
     $("gap-wheels").hidden = !state.gapWheels.text;
     renderTable();
+    return;
   }
   if (data.type === "fixes") {
     state.fixes = data.fixes;
@@ -169,6 +173,7 @@ function runCheck() {
 function onResult(result) {
   state.gapWheels = null;
   $("gap-wheels").hidden = true;
+  $("gap-wheels-note").textContent = "";
   $("gap-wheels-text").textContent = "";
   $("go").disabled = false;
   if (result.kind === "needs-index") return needsIndex(state.lockfile);
@@ -356,9 +361,8 @@ function renderTable() {
     el("th", { scope: "col", text: "Fix" })));
   const body = el("tbody", {}, ...shown.map((row) => {
     const f = fixFor(row, state.fixes);
-    const hasGapWheel = labels.some((t) => gapWheelFor(row, state.gapWheels, t.label));
-    const gapWheelFix = hasGapWheel && (f.kind === "none" || f.kind === "loses");
-    const fixText = gapWheelFix ? "gap wheel available" : f.kind === "pending" ? (state.fixesDone ? "not looked up" : "…") : FIX_TEXT[f.kind](f);
+    const gapWheelFix = f.kind === "none" || f.kind === "loses" ? gapWheelFixText(row, state.gapWheels) : null;
+    const fixText = gapWheelFix ?? (f.kind === "pending" ? (state.fixesDone ? "not looked up" : "…") : FIX_TEXT[f.kind](f));
     return el("tr", {},
       el("td", { class: "pkg" }, el("a", { href: `https://pypi.org/project/${encodeURIComponent(row.name)}/${encodeURIComponent(row.version || "")}`, rel: "noopener", text: row.name }), el("span", { class: "ver", text: row.version || "" })),
       ...labels.map((t) => {

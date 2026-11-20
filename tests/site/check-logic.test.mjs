@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   parseRepo, rawUrl, pickLockfile, toQuery, fromQuery, sortPythons, freeThreaded, fixFor, rowsFor, headline,
   cliCommand, fixPrompt, verdictText, nextSteps, validRef, labVerdict, labFor, canonicalName, gapWheelFor,
+  gapWheelFixText,
 } from "../../site/check/check-logic.mjs";
 
 test("parseRepo reads the forms people paste", () => {
@@ -180,7 +181,7 @@ test("a lab result counts only for its own release and target", () => {
 });
 
 
-test("the copy prompt includes only the driver’s gap wheel instructions", () => {
+test("the copy prompt includes only the driver's gap wheel instructions", () => {
   const result = { lockfile: "uv.lock", rows: [] };
   const gapWheels = {
     cells: [{ name: "fastlib", version: "2.0.0", target: "3.13 win-amd64" }],
@@ -189,6 +190,12 @@ test("the copy prompt includes only the driver’s gap wheel instructions", () =
   };
   assert.equal(gapWheelFor({ name: "fastlib", version: "2.0.0" }, gapWheels, "3.13 win-amd64"), true);
   assert.equal(gapWheelFor({ name: "fastlib", version: "2.0.1" }, gapWheels, "3.13 win-amd64"), false);
+  // The Fix column counts over all of a row's gaps: one filled target of two isn't "available" for the row.
+  const row = { name: "fastlib", version: "2.0.0", gaps: ["3.13 win-amd64"] };
+  assert.equal(gapWheelFixText(row, gapWheels), "gap wheel available");
+  assert.equal(gapWheelFixText({ ...row, gaps: ["3.13 win-amd64", "3.13 win-arm64"] }, gapWheels), "gap wheel for 1 of 2 gaps");
+  assert.equal(gapWheelFixText({ ...row, version: "2.0.1" }, gapWheels), null);
+  assert.equal(gapWheelFixText(row, null), null);
   const prompt = fixPrompt("o/r", result, {}, ["3.13"], ["win-amd64"], gapWheels);
   assert.match(prompt, /unofficial, built by wheelgap/);
   assert.ok(prompt.includes(gapWheels.text));

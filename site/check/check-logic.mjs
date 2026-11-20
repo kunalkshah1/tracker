@@ -175,6 +175,14 @@ export function gapWheelFor(row, gapWheels, target) {
   return gapWheels?.cells.some((cell) => cell.name === row.name && cell.version === row.version && cell.target === target) ?? false;
 }
 
+// The Fix column's text when no release fixes a row: how many of the row's gaps a gap wheel fills, so a wheel for
+// one target is never read as a fix for all of them. null when none is filled.
+export function gapWheelFixText(row, gapWheels) {
+  const filled = row.gaps.filter((target) => gapWheelFor(row, gapWheels, target)).length;
+  if (!filled) return null;
+  return filled === row.gaps.length ? "gap wheel available" : `gap wheel for ${filled} of ${row.gaps.length} gaps`;
+}
+
 // A prompt to paste into Claude Code (or any coding agent): the gaps, the bumps that fix them, and how to confirm.
 export function fixPrompt(repoName, result, fixes, pythons, platforms, gapWheels = null) {
   const groups = { all: [], some: [], loses: [], none: [], private: [], pending: [] };

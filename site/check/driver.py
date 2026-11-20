@@ -6,7 +6,7 @@ files it was given, with wheelgap's own functions, so the page says what `uvx wh
 - plan(paths): from the repo's file list, which files to fetch.
 - detect(root): the targets and Pythons the repo's workflows and Dockerfiles name (wheelgap --suggest-targets).
 - check(root, lockfile, ...): the lockfile's gaps, offline, from the files the lock lists.
-- gap_wheels(list): which of the last check’s gaps have a verified wheel (wheelgap --fix).
+- gap_wheels(list): which of the last check's gaps have a verified wheel (wheelgap --fix).
 - fixes(releases, wanted): for each gap, the nearest newer release with a wheel (wheelgap --suggest).
 
 Every function takes and returns JSON text, so nothing depends on how Pyodide converts objects.
@@ -50,7 +50,7 @@ def supports_gap_wheels() -> bool:
 
 
 def gap_wheels(list_json: str) -> str:
-    """Reuse the CLI’s eligibility rules and render the same installation instructions."""
+    """Reuse the CLI's eligibility rules and render the same installation instructions."""
     empty = {"cells": [], "text": "", "unofficial": ""}
     if gapwheels is None or _last_check is None:
         return json.dumps(empty)
