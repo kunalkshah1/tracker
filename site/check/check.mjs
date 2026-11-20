@@ -171,6 +171,7 @@ function onResult(result) {
   $("gap-wheels").hidden = true;
   $("gap-wheels-text").textContent = "";
   $("go").disabled = false;
+  if (result.kind === "needs-index") return needsIndex(state.lockfile);
   if (result.error) {
     status(result.kind === "source" ? `wheelgap couldn't read ${state.lockfile}: ${result.error}` : result.error, true);
     return;
@@ -188,7 +189,7 @@ function onResult(result) {
 function noLockfile() {
   $("out").hidden = false;
   $("verdict").textContent = "No lockfile found";
-  $("verdict-detail").textContent = `The repo check reads a uv.lock, poetry.lock, pdm.lock, pylock.toml or pixi.lock, and ${state.repo.owner}/${state.repo.name} has none${state.truncated ? " in the part of its file list GitHub returned" : ""}. For a requirements.txt or pyproject.toml, run uvx wheelgap in a checkout: it looks the packages up on PyPI.`;
+  $("verdict-detail").textContent = `The repo check reads a uv.lock, poetry.lock, pdm.lock or pylock.toml, and ${state.repo.owner}/${state.repo.name} has none${state.truncated ? " in the part of its file list GitHub returned" : ""}. For a requirements.txt, pixi.lock or pyproject.toml, run uvx wheelgap in a checkout: it looks the packages up on PyPI.`;
   for (const id of ["alerts"]) $(id).replaceChildren();
   hideResultSections(true);
 }

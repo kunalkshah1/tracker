@@ -91,8 +91,10 @@ def test_plan_picks_files_like_suggest_targets():
     paths = [
         "README.md",
         "uv.lock",
+        "pixi.lock",
         "backend/uv.lock",
         "backend/requirements.txt",
+        "backend/pixi.lock",
         "node_modules/x/uv.lock",
         ".venv/lib/poetry.lock",
         ".github/workflows/ci.yml",
@@ -107,8 +109,10 @@ def test_plan_picks_files_like_suggest_targets():
     plan = json.loads(driver.plan(json.dumps(paths)))
     assert plan["lockfiles"] == [
         {"path": "uv.lock", "offline": True},
+        {"path": "pixi.lock", "offline": False},
         {"path": "backend/uv.lock", "offline": True},
         {"path": "backend/requirements.txt", "offline": False},
+        {"path": "backend/pixi.lock", "offline": False},
     ]
     assert plan["workflows"] == [".github/workflows/ci.yml"]
     assert plan["dockerfiles"] == ["Dockerfile", "deploy/Containerfile"]
@@ -169,6 +173,22 @@ def test_check_refuses_lockfiles_that_need_an_index(repo):
     (repo / "uv.lock").write_text("not toml [", encoding="utf-8")
     bad = json.loads(driver.check(str(repo), "uv.lock", options()))
     assert bad["kind"] == "source" and str(repo) not in bad["error"]
+
+
+def test_check_reports_a_lockfile_that_needs_the_index_for_its_missing_files(repo):
+    # A poetry.lock is offered as checkable, but wheelgap reads it offline only when every package lists its
+    # files; one that doesn't would need a PyPI lookup the page can't make, so check() says needs-index rather
+    # than surfacing wheelgap's API-oriented "set offline=False" error as if the lockfile itself were unreadable.
+    (repo / "poetry.lock").write_text(
+        '[[package]]\nname = "demo"\nversion = "0.1.0"\n\n[metadata]\nlock-version = "2.1"\n'
+        'python-versions = ">=3.13"\ncontent-hash = "abc123"\n',
+        encoding="utf-8",
+    )
+    r = json.loads(driver.check(str(repo), "poetry.lock", options()))
+    assert r["kind"] == "needs-index"
+    # A pixi.lock records only the file pixi picked per platform, so it's never checkable here at all.
+    (repo / "pixi.lock").write_text("[manifest]\n", encoding="utf-8")
+    assert json.loads(driver.check(str(repo), "pixi.lock", options()))["kind"] == "needs-index"
 
 
 def wheel(name):

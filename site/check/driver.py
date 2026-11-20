@@ -20,15 +20,17 @@ from pathlib import Path, PurePosixPath
 
 import wheelgap
 from packaging.utils import canonicalize_name
-from wheelgap import api, origin, suggest_targets
+from wheelgap import api, offline, origin, suggest_targets
 from wheelgap import suggest as release_suggest
 from wheelgap.check import Row, Status
-from wheelgap.sources import LOCKFILES, Source, SourceError, pythons_outside_lock
+from wheelgap.sources import LOCKFILES, Source, SourceError, load_file, pythons_outside_lock
 from wheelgap.targets import DEFAULT_PLATFORMS, NEWEST_PYTHON, Target, TargetError
 
 # The lockfiles that list each package's files, so they can be checked without asking an index. The others
-# (Pipfile.lock, requirements files) need PyPI lookups, which the page doesn't make yet.
-OFFLINE = ("uv.lock", "pylock.toml", "poetry.lock", "pdm.lock", "pixi.lock")
+# (Pipfile.lock, requirements files, pixi.lock) need PyPI lookups, which the page doesn't make yet: a pixi.lock
+# records only the file pixi picked for each of the lock's platforms, so wheelgap can only answer it by looking
+# the pinned versions up. And even a listed kind can leave a package's files out; check() catches that below.
+OFFLINE = ("uv.lock", "pylock.toml", "poetry.lock", "pdm.lock")
 GAPS = (Status.SOURCE, Status.MISSING)  # no wheel; UNKNOWN (couldn't be checked) is reported apart
 MAX_LOCKFILES = 30
 MAX_DOCKERFILES = 40
@@ -181,6 +183,16 @@ def check(root: str, lockfile: str, options_json: str) -> str:
     path = Path(root) / lockfile
     if path.name not in OFFLINE:
         return json.dumps({"error": f"{path.name} needs PyPI lookups", "kind": "needs-index"})
+    try:
+        source = load_file(path)
+    except (SourceError, ValueError, OSError) as e:  # ValueError: a lockfile that isn't valid TOML or JSON
+        return json.dumps({"error": str(e).replace(f"{root}/", ""), "kind": "source"})
+    try:
+        # A listed lockfile can still leave a package's files out, so that reading it offline would need the
+        # index; that's a "needs PyPI lookups" answer, not a lockfile the page failed to read.
+        offline.require_offline([source])
+    except SourceError as e:
+        return json.dumps({"error": str(e), "kind": "needs-index"})
     try:
         results, source, check_rows = api._check_lockfile(path, targets, online=False, offline=True)
     except (SourceError, ValueError, OSError) as e:  # ValueError: a lockfile that isn't valid TOML or JSON
