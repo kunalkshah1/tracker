@@ -9,6 +9,11 @@ import { rawUrl } from "./check-logic.mjs";
 export const WHEELGAP = "wheelgap==0.13.0";
 const MAX_FILE = 25 * 1024 * 1024;
 const MAX_FIX_LOOKUPS = 80;
+const MAX_GAP_WHEELS_BYTES = 4 * 1024 * 1024;
+const GAP_WHEELS_URL = "https://wheelgap.github.io/wheels/data/gap-wheels.json";
+
+let latestCheck = null;
+let gapWheelList = null; // one request, including a failed one, for the life of this worker
 
 let ready = null; // the driver module, once Pyodide and wheelgap are in
 let latestLoad = null; // the id of the newest load asked for: an older one that finishes later is dropped
@@ -132,6 +137,7 @@ async function check(id, root, lockfile, options) {
     write(py, repo.root, lockfile, bytes);
     repo.fetched.add(lockfile);
   }
+  if (id !== latestCheck) throw new Failure("stale", "superseded by a newer check");
   post({ id, type: "progress", stage: "checking" });
   const result = JSON.parse(driver.check(repo.root, lockfile, JSON.stringify(options)));
   return result;
@@ -139,7 +145,7 @@ async function check(id, root, lockfile, options) {
 
 // Looks up on PyPI the gap rows the driver marked as PyPI packages (most gaps first; never a private index's names)
 // and asks the driver for each one's nearest fix. A failed lookup isn't remembered, so the next check retries it.
-async function fixes(rows) {
+async function fixes(id, rows) {
   const { driver } = await ready;
   const wanted = rows.filter((r) => r.lookup && r.gaps.length);
   const names = [...new Set([...wanted].sort((a, b) => b.gaps.length - a.gaps.length).map((r) => r.name))];
@@ -154,7 +160,39 @@ async function fixes(rows) {
     }
   });
   const have = Object.fromEntries(names.filter((n) => releases.get(n)).map((n) => [n, releases.get(n)]));
+  if (id !== latestCheck) return {};
   return JSON.parse(driver.fixes(JSON.stringify(have), JSON.stringify(wanted)));
+}
+
+async function fetchGapWheels() {
+  const response = await fetch(GAP_WHEELS_URL, { credentials: "omit" });
+  if (!response.ok || !response.body || Number(response.headers.get("content-length")) > MAX_GAP_WHEELS_BYTES) return null;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let text = "";
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) return text + decoder.decode();
+      size += value.byteLength;
+      if (size > MAX_GAP_WHEELS_BYTES) {
+        await reader.cancel();
+        return null;
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+async function gapWheels(id, rows) {
+  const { driver } = await ready;
+  if (!driver.supports_gap_wheels() || !rows.some((row) => row.gaps.length)) return null;
+  gapWheelList ??= fetchGapWheels().catch(() => null);
+  const list = await gapWheelList;
+  return list && latestCheck === id ? JSON.parse(driver.gap_wheels(list)) : null;
 }
 
 self.onmessage = async ({ data }) => {
@@ -162,18 +200,23 @@ self.onmessage = async ({ data }) => {
   try {
     if (type === "load") {
       latestLoad = id;
+      latestCheck = null;
       post({ id, type: "loaded", ...(await load(data.repo, id)) });
     } else if (type === "check") {
+      latestCheck = id;
       const result = await check(id, data.root, data.lockfile, data.options);
       post({ id, type: "result", result });
       if (!result.error) {
+        const pendingGapWheels = gapWheels(id, result.rows).catch(() => null);
         let found = {};
         try {
-          if (result.rows.some((r) => r.lookup)) found = await fixes(result.rows);
+          if (result.rows.some((r) => r.lookup)) found = await fixes(id, result.rows);
         } catch {
           // a failed lookup leaves those rows "not looked up"; the result above stands
         }
         post({ id, type: "fixes", fixes: found });
+        const gap = await pendingGapWheels;
+        if (gap && latestCheck === id) post({ id, type: "gap-wheels", gapWheels: gap });
       }
     }
   } catch (e) {

@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   parseRepo, rawUrl, pickLockfile, toQuery, fromQuery, sortPythons, freeThreaded, fixFor, rowsFor, headline,
-  cliCommand, fixPrompt, verdictText, nextSteps, validRef, labVerdict, labFor, canonicalName,
+  cliCommand, fixPrompt, verdictText, nextSteps, validRef, labVerdict, labFor, canonicalName, gapWheelFor,
 } from "../../site/check/check-logic.mjs";
 
 test("parseRepo reads the forms people paste", () => {
@@ -177,4 +177,19 @@ test("a lab result counts only for its own release and target", () => {
   assert.equal(labFor(builds, "0.14.0", "3.14t win-arm64"), null);
   assert.equal(labFor("nope", "0.14.0", "3.14 win-arm64"), null);
   assert.equal(canonicalName("Typing_Extensions.x"), "typing-extensions-x");
+});
+
+
+test("the copy prompt includes only the driver’s gap wheel instructions", () => {
+  const result = { lockfile: "uv.lock", rows: [] };
+  const gapWheels = {
+    cells: [{ name: "fastlib", version: "2.0.0", target: "3.13 win-amd64" }],
+    text: "[[tool.uv.index]]\nname = \"wheelgap\"",
+    unofficial: "unofficial, built by wheelgap",
+  };
+  assert.equal(gapWheelFor({ name: "fastlib", version: "2.0.0" }, gapWheels, "3.13 win-amd64"), true);
+  assert.equal(gapWheelFor({ name: "fastlib", version: "2.0.1" }, gapWheels, "3.13 win-amd64"), false);
+  const prompt = fixPrompt("o/r", result, {}, ["3.13"], ["win-amd64"], gapWheels);
+  assert.match(prompt, /unofficial, built by wheelgap/);
+  assert.ok(prompt.includes(gapWheels.text));
 });

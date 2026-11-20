@@ -6,6 +6,7 @@ files it was given, with wheelgap's own functions, so the page says what `uvx wh
 - plan(paths): from the repo's file list, which files to fetch.
 - detect(root): the targets and Pythons the repo's workflows and Dockerfiles name (wheelgap --suggest-targets).
 - check(root, lockfile, ...): the lockfile's gaps, offline, from the files the lock lists.
+- gap_wheels(list): which of the last check’s gaps have a verified wheel (wheelgap --fix).
 - fixes(releases, wanted): for each gap, the nearest newer release with a wheel (wheelgap --suggest).
 
 Every function takes and returns JSON text, so nothing depends on how Pyodide converts objects.
@@ -21,8 +22,8 @@ import wheelgap
 from packaging.utils import canonicalize_name
 from wheelgap import api, origin, suggest_targets
 from wheelgap import suggest as release_suggest
-from wheelgap.check import Status
-from wheelgap.sources import LOCKFILES, SourceError, pythons_outside_lock
+from wheelgap.check import Row, Status
+from wheelgap.sources import LOCKFILES, Source, SourceError, pythons_outside_lock
 from wheelgap.targets import DEFAULT_PLATFORMS, NEWEST_PYTHON, Target, TargetError
 
 # The lockfiles that list each package's files, so they can be checked without asking an index. The others
@@ -32,8 +33,48 @@ GAPS = (Status.SOURCE, Status.MISSING)  # no wheel; UNKNOWN (couldn't be checked
 MAX_LOCKFILES = 30
 MAX_DOCKERFILES = 40
 
+try:
+    from wheelgap import gapwheels
+except ImportError:  # the pinned release may predate --fix
+    gapwheels = None
+
 # Targets of the last check(), by label, for fixes().
 _targets: dict[str, Target] = {}
+_last_check: tuple[list[Row], list[Target], Source] | None = None
+
+
+def supports_gap_wheels() -> bool:
+    return gapwheels is not None
+
+
+def gap_wheels(list_json: str) -> str:
+    """Reuse the CLI’s eligibility rules and render the same installation instructions."""
+    empty = {"cells": [], "text": "", "unofficial": ""}
+    if gapwheels is None or _last_check is None:
+        return json.dumps(empty)
+    try:
+        wheels = gapwheels.parse(json.loads(list_json))
+    except ValueError:
+        return json.dumps(empty)
+    if not wheels:
+        return json.dumps(empty)
+    rows, targets, source = _last_check
+    fills = gapwheels.fillable(
+        rows,
+        targets,
+        {id(row.package): source for row in rows},
+        wheels,
+        origin.private_names([source]),
+    )
+    if not fills:
+        return json.dumps(empty)
+    return json.dumps(
+        {
+            "cells": gapwheels.to_json(fills, True),
+            "text": "\n".join(gapwheels.text_lines(fills, True)).strip(),
+            "unofficial": gapwheels.UNOFFICIAL,
+        }
+    )
 
 
 def _skipped_folder(parts: tuple[str, ...]) -> bool:
@@ -129,6 +170,8 @@ def check(root: str, lockfile: str, options_json: str) -> str:
     requires-python leaves out is reported in `outside_lock` and none of its cells count as gaps: uv keeps no wheels
     for it in the lock, so they'd be false gaps (the CLI rechecks them on PyPI; the page says so instead).
     """
+    global _last_check
+    _last_check = None
     options = json.loads(options_json)
     limits = {k: options[k] for k in ("glibc", "musl", "macos") if isinstance(options.get(k), str)}
     try:
@@ -139,14 +182,14 @@ def check(root: str, lockfile: str, options_json: str) -> str:
     if path.name not in OFFLINE:
         return json.dumps({"error": f"{path.name} needs PyPI lookups", "kind": "needs-index"})
     try:
-        # 0.12.0 also returns the check rows; only the results and the source are used here.
-        results, source, *_ = api._check_lockfile(path, targets, online=False, offline=True)
+        results, source, check_rows = api._check_lockfile(path, targets, online=False, offline=True)
     except (SourceError, ValueError, OSError) as e:  # ValueError: a lockfile that isn't valid TOML or JSON
         return json.dumps({"error": str(e).replace(f"{root}/", ""), "kind": "source"})
     _targets.clear()
     _targets.update((t.label(True), t) for t in targets)
     outside = set(pythons_outside_lock(source, targets))
     counted = [t for t in targets if t.python not in outside]
+    _last_check = (check_rows, counted, source)
     per_target = {t.label(True): {s.value: 0 for s in (Status.WHEEL, *GAPS, Status.UNKNOWN)} for t in targets}
     # --suggest's rule (origin.known_pypi): only packages positively from PyPI are looked up there, so a private
     # package's name never goes to pypi.org, and a same-named PyPI project is never offered as its fix.

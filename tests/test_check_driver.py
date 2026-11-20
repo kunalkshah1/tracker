@@ -224,3 +224,48 @@ def test_fixes_reports_a_release_that_only_trades_one_gap_for_another(repo):
     }
     fx = json.loads(driver.fixes(json.dumps(releases), json.dumps(r["rows"])))
     assert fx == {"fastlib==2.0.0": {"found": {}, "loses": ["3.13 linux-aarch64"]}}
+
+
+@pytest.mark.parametrize(
+    "case", ["match", "version", "target", "private", "malformed", "requires_python"]
+)
+def test_gap_wheels_reuse_cli_checks(repo, case):
+    gapwheels = pytest.importorskip("wheelgap.gapwheels")
+    lockfile = repo / "uv.lock"
+    entry = {
+        "name": "fastlib",
+        "version": "2.0.0",
+        "wheel": "fastlib-2.0.0-cp313-cp313-win_amd64.whl",
+        "sha256": "a" * 64,
+        "requires_python": ">=3.13",
+    }
+    if case == "private":
+        lockfile.write_text(
+            LOCK.replace(
+                'name = "fastlib"\nversion = "2.0.0"\nsource = { registry = "https://pypi.org/simple" }',
+                'name = "fastlib"\nversion = "2.0.0"\nsource = { registry = "https://private.invalid/simple" }',
+            ),
+            encoding="utf-8",
+        )
+    elif case == "version":
+        entry.update(version="2.0.1", wheel="fastlib-2.0.1-cp313-cp313-win_amd64.whl")
+    elif case == "target":
+        entry["wheel"] = "fastlib-2.0.0-cp313-cp313-win_arm64.whl"
+    elif case == "malformed":
+        entry["sha256"] = "bad"
+    elif case == "requires_python":
+        entry["requires_python"] = ">=3.14"
+    options = {"pythons": ["3.13"], "platforms": ["win-amd64"]}
+    driver.check(str(repo), lockfile.name, json.dumps(options))
+    result = json.loads(
+        driver.gap_wheels(json.dumps({"schema": gapwheels.SCHEMA, "wheels": [entry]}))
+    )
+    if case == "match":
+        assert [(cell["name"], cell["target"]) for cell in result["cells"]] == [
+            ("fastlib", "3.13 win-amd64")
+        ]
+        assert "[[tool.uv.index]]" in result["text"]
+        assert "fastlib" in result["text"]
+        assert result["unofficial"] == gapwheels.UNOFFICIAL
+    else:
+        assert result == {"cells": [], "text": "", "unofficial": ""}

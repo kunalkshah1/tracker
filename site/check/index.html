@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdn.jsdelivr.net/pyodide/v314.0.8/full/ 'wasm-unsafe-eval'; worker-src 'self' https://cdn.jsdelivr.net/pyodide/v314.0.8/full/; connect-src 'self' https://cdn.jsdelivr.net/pyodide/v314.0.8/full/ https://pypi.org https://files.pythonhosted.org https://api.github.com https://raw.githubusercontent.com; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdn.jsdelivr.net/pyodide/v314.0.8/full/ 'wasm-unsafe-eval'; worker-src 'self' https://cdn.jsdelivr.net/pyodide/v314.0.8/full/; connect-src 'self' https://cdn.jsdelivr.net/pyodide/v314.0.8/full/ https://pypi.org https://files.pythonhosted.org https://api.github.com https://raw.githubusercontent.com https://wheelgap.github.io/wheels/data/gap-wheels.json; base-uri 'none'; form-action 'none'">
   <title>Check a Repo's Wheels</title>
   <meta name="description" content="Paste a GitHub repository: see which of its Python dependencies have no prebuilt wheel for the platforms it ships to, and the release that fixes each one. Runs in your browser.">
   <link rel="stylesheet" href="../style.css">
@@ -87,6 +87,11 @@
         <button type="button" class="action" id="copy-link">Copy link to this result</button>
       </div>
       <p class="note">The prompt lists each bump and how to confirm it. Paste it into Claude Code, Cursor or any agent; with <code>claude mcp add wheelgap -- uvx --from wheelgap wheelgap-mcp</code>, it can check packages itself.</p>
+      <section id="gap-wheels" aria-labelledby="gap-wheels-title" hidden>
+        <h3 id="gap-wheels-title">Gap wheels</h3>
+        <pre><code id="gap-wheels-text"></code></pre>
+        <button type="button" class="action" id="copy-gap-wheels">Copy gap wheel instructions</button>
+      </section>
       <p>Run the same check locally or in CI:</p>
       <pre><code id="cli"></code></pre>
       <p class="note">It's the <a href="https://github.com/wheelgap/wheelgap">wheelgap</a> command line, also a <a href="https://github.com/wheelgap/wheelgap/blob/main/docs/ci.md">GitHub Action</a> and a pre-commit hook, so a new gap fails the pull request that adds it.</p>

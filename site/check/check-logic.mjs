@@ -170,8 +170,13 @@ export function cliCommand(result, pythons, platforms) {
   return `uvx wheelgap ${lock} -p ${sortPythons(pythons).join(",")} -t ${platforms.join(",")}`;
 }
 
+// Look up a fill the Python driver already matched, for display only.
+export function gapWheelFor(row, gapWheels, target) {
+  return gapWheels?.cells.some((cell) => cell.name === row.name && cell.version === row.version && cell.target === target) ?? false;
+}
+
 // A prompt to paste into Claude Code (or any coding agent): the gaps, the bumps that fix them, and how to confirm.
-export function fixPrompt(repoName, result, fixes, pythons, platforms) {
+export function fixPrompt(repoName, result, fixes, pythons, platforms, gapWheels = null) {
   const groups = { all: [], some: [], loses: [], none: [], private: [], pending: [] };
   for (const r of result.rows) {
     const f = fixFor(r, fixes);
@@ -192,6 +197,9 @@ export function fixPrompt(repoName, result, fixes, pythons, platforms) {
   section("none", "No newer release has a wheel for these (consider dropping the target, another package, or building wheels):");
   section("private", "These weren't looked up, since the lockfile doesn't record their index as PyPI (Poetry and PDM locks don't, nor Git or path sources); look for a newer release with wheels on the index they come from:");
   section("pending", "These weren't looked up on PyPI, so check them with `uvx wheelgap --explain --suggest`:");
+  if (gapWheels?.text) {
+    lines.push(`For gaps a release bump does not cover, these gap wheels are ${gapWheels.unofficial}:`, gapWheels.text, "");
+  }
   lines.push(
     "Check each bump against our version constraints (a new major version may need code changes), update the lockfile with the project's own tool, and confirm with:",
     `  ${cliCommand(result, pythons, platforms)}`,

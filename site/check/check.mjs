@@ -3,7 +3,7 @@
 
 import {
   PLATFORMS, PYTHONS, parseRepo, pickLockfile, toQuery, fromQuery, sortPythons, freeThreaded,
-  fixFor, rowsFor, headline, cliCommand, fixPrompt, verdictText, nextSteps, validRef, labVerdict, labFor, canonicalName,
+  fixFor, rowsFor, headline, cliCommand, fixPrompt, verdictText, nextSteps, validRef, labVerdict, labFor, canonicalName, gapWheelFor,
 } from "./check-logic.mjs";
 
 const $ = (id) => document.getElementById(id);
@@ -68,7 +68,7 @@ let seq = 0;
 let wheelgapVersion = null;
 const state = {
   repo: null, ref: null, root: null, plan: null, detected: null, lockfile: null, pythons: [], platforms: [],
-  result: null, fixes: null, fixesDone: false, python: null, platform: null, showAll: false, truncated: false, lab: {},
+  result: null, fixes: null, gapWheels: null, fixesDone: false, python: null, platform: null, showAll: false, truncated: false, lab: {},
 };
 
 function status(text, error = false) {
@@ -111,6 +111,12 @@ worker.onmessage = ({ data }) => {
   }
   if (data.type === "loaded") return onLoaded(data);
   if (data.type === "result") return onResult(data.result);
+  if (data.type === "gap-wheels") {
+    state.gapWheels = data.gapWheels;
+    $("gap-wheels-text").textContent = state.gapWheels.text;
+    $("gap-wheels").hidden = !state.gapWheels.text;
+    renderTable();
+  }
   if (data.type === "fixes") {
     state.fixes = data.fixes;
     state.fixesDone = true;
@@ -161,6 +167,9 @@ function runCheck() {
 }
 
 function onResult(result) {
+  state.gapWheels = null;
+  $("gap-wheels").hidden = true;
+  $("gap-wheels-text").textContent = "";
   $("go").disabled = false;
   if (result.error) {
     status(result.kind === "source" ? `wheelgap couldn't read ${state.lockfile}: ${result.error}` : result.error, true);
@@ -346,7 +355,9 @@ function renderTable() {
     el("th", { scope: "col", text: "Fix" })));
   const body = el("tbody", {}, ...shown.map((row) => {
     const f = fixFor(row, state.fixes);
-    const fixText = f.kind === "pending" ? (state.fixesDone ? "not looked up" : "…") : FIX_TEXT[f.kind](f);
+    const hasGapWheel = labels.some((t) => gapWheelFor(row, state.gapWheels, t.label));
+    const gapWheelFix = hasGapWheel && (f.kind === "none" || f.kind === "loses");
+    const fixText = gapWheelFix ? "gap wheel available" : f.kind === "pending" ? (state.fixesDone ? "not looked up" : "…") : FIX_TEXT[f.kind](f);
     return el("tr", {},
       el("td", { class: "pkg" }, el("a", { href: `https://pypi.org/project/${encodeURIComponent(row.name)}/${encodeURIComponent(row.version || "")}`, rel: "noopener", text: row.name }), el("span", { class: "ver", text: row.version || "" })),
       ...labels.map((t) => {
@@ -355,7 +366,10 @@ function renderTable() {
         const lab = s === "source" ? labFor(state.lab[canonicalName(row.name)], row.version, t.label) : null;
         const v = lab ? labVerdict(lab) : null;
         return el("td", {}, el("span", { class: `status s-${s}`, text: STATUS_TEXT[s] || s }),
-          v ? el("span", { class: `lab lab-${v.kind}`, text: LAB_SHORT[v.kind], title: `Build lab, ${lab.date} on ${lab.runner}: ${v.text}` }) : null);
+          v ? el("span", { class: `lab lab-${v.kind}`, text: LAB_SHORT[v.kind], title: `Build lab, ${lab.date} on ${lab.runner}: ${v.text}` }) : null,
+          gapWheelFor(row, state.gapWheels, t.label)
+            ? el("span", { class: "lab", text: "gap wheel", title: state.gapWheels.unofficial })
+            : null);
       }),
       el("td", { class: `fix fix-${f.kind}`, text: fixText }));
   }));
@@ -391,7 +405,8 @@ async function copy(button, text, done) {
 }
 
 $("copy-link").onclick = (e) => copy(e.currentTarget, location.href, "Link copied");
-$("copy-prompt").onclick = (e) => copy(e.currentTarget, fixPrompt(`${state.repo.owner}/${state.repo.name}`, state.result, state.fixes, state.pythons, state.platforms), "Prompt copied");
+$("copy-prompt").onclick = (e) => copy(e.currentTarget, fixPrompt(`${state.repo.owner}/${state.repo.name}`, state.result, state.fixes, state.pythons, state.platforms, state.gapWheels), "Prompt copied");
+$("copy-gap-wheels").onclick = (e) => copy(e.currentTarget, state.gapWheels.text, "Gap wheel instructions copied");
 $("more").onclick = () => { state.showAll = true; renderTable(); };
 
 $("form").addEventListener("submit", (e) => {
